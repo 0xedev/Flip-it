@@ -1,17 +1,18 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjMyMDI2NCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDFGMkE1MkYwZjlDZDYwZGY4RDAwNTdjNGE1YTEwRUFlNjQyNjNCNDgifQ",
-    "payload": "eyJkb21haW4iOiJmbGlwLWl0LXN0ZWVsLnZlcmNlbC5hcHAifQ",
-    "signature": "MHhmYzk5MDgzZjNiMWVmOTkzYjU1NjNlYmUwMjljNWExZDJhYWUxY2NkZGI0YzZiZDYyNGUwYjIwNDk4MWY3YjkyNWIwZmI4M2M4YzhjODZhZWY4Y2FjM2EzYTE2YzJiYzNmMmJjODhjNjlmYmM4MDBjY2EzZjM2MTVmMDdjNTQzZTFi"
+    "header": "eyJmaWQiOjIzOTM5NiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDRENEU1MjIzODRkNkYxMDkwYkZENEM0NTI3YTdkNTJERmQyMGJDYTMifQ",
+    "payload": "eyJkb21haW4iOiJmbGlwLWl0LWZyYW1lLnZlcmNlbC5hcHAifQ",
+    "signature": "MHgxNTlhM2NhMjUxZDBhMDIxZmRjMTM2ZGQ2ZTY3NjQ0NTkyYjNhZDhlOWJjMDY2YmU5N2M3Yjg2ZjA0MDczZTQwMTk0ZTk0MmQxOTQyNjgwY2E2MGYxNmExOWE5Y2RiYmMxM2NiNzJjMDk4NzI5OGU4ZTc1YzY4MTIxYjI5N2MyOTFj"
   },
   "frame": {
     "version": "1",
-    "name": "FlipIt",
-    "iconUrl": "https://flip-it-steel.vercel.app/icon.png",
-    "homeUrl": "https://flip-it-steel.vercel.app/",
-    "imageUrl": "https://as2.ftcdn.net/jpg/03/69/43/69/220_F_369436902_IOgNshQi3JSdTRurt9u9ujEdO4LwZoyi.jpg",
-    "buttonTitle": "Connect",
-    "splashImageUrl": "https://unsplash.com/photos/a-bunch-of-balloons-that-are-shaped-like-email-7NT4EDSI5Ok",
-    "splashBackgroundColor": "#eeccff"
+    "name": "Example Frame",
+    "iconUrl": "https://flip-it-frame.vercel.app/icon.png",
+    "homeUrl": "https://flip-it-frame.vercel.app",
+    "imageUrl": "https://flip-it-frame.vercel.app/image.png",
+    "buttonTitle": "Check this out",
+    "splashImageUrl": "https://flip-it-frame.vercel.app/splash.png",
+    "splashBackgroundColor": "#eeccff",
+    "webhookUrl": "https://flip-it-frame.vercel.app/api/webhook"
   }
 }
