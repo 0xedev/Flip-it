@@ -29,6 +29,11 @@ const FAQ = () => {
         "Currently, we support tokens like STABLEAI, DIG, WEB9, BNKR, FED, RaTcHeT, and GIRTH. Check the game interface for the full list.",
     },
     {
+      question: "Where can i get the supported token?",
+      answer:
+        "You can get the supported token with this basket: https://warpcast.com/basketdotfarm/0x0d04dcab ",
+    },
+    {
       question: "Is it fair?",
       answer: "Yes! game uses a verifiable random function (VRF) for fairness.",
     },
