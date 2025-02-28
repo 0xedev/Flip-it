@@ -12,7 +12,6 @@ const FAQ = () => {
   const [openFAQ, setOpenFAQ] = useState<number | null>(null);
   const navigate = useNavigate();
 
-  // Explicitly type the faqs array
   const faqs: FAQItem[] = [
     {
       question: "What is FlipIt?",
