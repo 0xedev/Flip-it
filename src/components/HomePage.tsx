@@ -50,7 +50,9 @@ const HomePage = () => {
         {/* Spinning Coin - responsive size */}
         <div className="mb-8 sm:mb-16">
           <div className="w-28 h-28 sm:w-40 sm:h-40 animate-[spin_2s_linear_infinite] rounded-full bg-gradient-to-r from-yellow-300 via-yellow-500 to-yellow-300 shadow-[0_0_50px_rgba(168,85,247,0.4)] flex items-center justify-center">
-            <div className="text-yellow-700 font-bold text-4xl sm:text-6xl">₿</div>
+            <div className="text-yellow-700 font-bold text-4xl sm:text-6xl">
+              ₿
+            </div>
           </div>
         </div>
 
@@ -74,6 +76,13 @@ const HomePage = () => {
                 <span>PVP Battle</span>
               </div>
             </button>
+          </Link>
+
+          <Link
+            to="/faq"
+            className="mt-8 text-purple-300 hover:text-purple-100 underline"
+          >
+            View FAQ
           </Link>
         </div>
       </main>
