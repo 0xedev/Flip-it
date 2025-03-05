@@ -1,18 +1,18 @@
 {
   "accountAssociation": {
     "header": "eyJmaWQiOjIzOTM5NiwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDRENEU1MjIzODRkNkYxMDkwYkZENEM0NTI3YTdkNTJERmQyMGJDYTMifQ",
-    "payload": "eyJkb21haW4iOiJmbGlwLWl0LWZyYW1lLnZlcmNlbC5hcHAifQ",
-    "signature": "MHgxNTlhM2NhMjUxZDBhMDIxZmRjMTM2ZGQ2ZTY3NjQ0NTkyYjNhZDhlOWJjMDY2YmU5N2M3Yjg2ZjA0MDczZTQwMTk0ZTk0MmQxOTQyNjgwY2E2MGYxNmExOWE5Y2RiYmMxM2NiNzJjMDk4NzI5OGU4ZTc1YzY4MTIxYjI5N2MyOTFj"
+    "payload": "eyJkb21haW4iOiJmbGlwLWl0LWNsYW5rZXIudmVyY2VsLmFwcCJ9",
+    "signature": "MHg5Y2MxYTFiMDgwM2RkYTk0OTA5YjQ2ZWYyZDBiNTg3YTY1Njc5MThkNWRjMTcyNWVhYWEzYmYzOTg0MTM5NDRkMDBkZjUxNjI5MWRkODc3Y2U0NzQ2YTdmZTUzZTM2NjM4NzY4MDlmNzg5MjM1ZTQyZmVmY2ZiNjBhNTUwN2NiMTFi"
   },
   "frame": {
     "version": "1",
-    "name": "Example Frame",
-    "iconUrl": "https://flip-it-frame.vercel.app/icon.png",
-    "homeUrl": "https://flip-it-frame.vercel.app",
-    "imageUrl": "https://flip-it-frame.vercel.app/image.png",
-    "buttonTitle": "Check this out",
-    "splashImageUrl": "https://flip-it-frame.vercel.app/splash.png",
+    "name": "Flip-It",
+    "iconUrl": "https://flip-it-clanker.vercel.app/icon.png",
+    "homeUrl": "https://flip-it-clanker.vercel.app",
+    "imageUrl": "https://flip-it-clanker.vercel.app/image.png",
+    "buttonTitle": "Flip",
+    "splashImageUrl": "https://flip-it-clanker.vercel.app/splash.png",
     "splashBackgroundColor": "#eeccff",
-    "webhookUrl": "https://flip-it-frame.vercel.app/api/webhook"
+    "webhookUrl": "https://flip-it-clanker.vercel.app/api/webhook"
   }
 }
