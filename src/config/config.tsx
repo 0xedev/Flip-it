@@ -1,20 +1,15 @@
 import { base } from 'wagmi/chains'
 import { QueryClient } from "@tanstack/react-query";
-import {
-
-  metaMask
-
-} from "wagmi/connectors";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import { createConfig, http } from "wagmi";
 import { createClient } from "viem";
+
+
 
 export const wagmiConfig = createConfig({
   chains: [base],
   connectors: [
     farcasterFrame(),
-  
-    metaMask(),
    
   ],
   client({ chain }) {
