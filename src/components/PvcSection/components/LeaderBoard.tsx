@@ -300,7 +300,7 @@ const LeaderBoard: React.FC = () => {
           onClick={() => handleTabChange('token-leaderboard')}
         >
           <Trophy className="mr-2 h-4 w-4" />
-          Payout
+          Payouts LeaderBoard
         </button>
         <button
           className={`px-4 py-2 font-medium flex items-center ${activeTab === 'player-bets' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
