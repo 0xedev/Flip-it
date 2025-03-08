@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import Create from "./components/CreateGameVsComp";
 
+
 const Pvc = () => {
   const navigate = useNavigate();
 
@@ -9,7 +10,9 @@ const Pvc = () => {
       <button onClick={() => navigate("/")} className="back-button">
         Back to Home
       </button>
-      <Create />
+     
+      <Create/>
+     
     </>
   );
 };

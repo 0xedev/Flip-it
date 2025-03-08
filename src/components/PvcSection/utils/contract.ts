@@ -1,6 +1,12 @@
 export const ABI = [
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "initialTreasuryAddress",
+				"type": "address"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
@@ -73,6 +79,49 @@ export const ABI = [
 		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "requestId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "playerChoice",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "outcome",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "userWon",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "profit",
+				"type": "uint256"
+			}
+		],
+		"name": "BetResult",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
 				"indexed": false,
 				"internalType": "uint256",
 				"name": "requestId",
@@ -120,6 +169,12 @@ export const ABI = [
 				"internalType": "bool",
 				"name": "outcome",
 				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
 			}
 		],
 		"name": "GameLost",
@@ -163,6 +218,12 @@ export const ABI = [
 				"internalType": "bool",
 				"name": "outcome",
 				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
 			}
 		],
 		"name": "GameWon",
@@ -248,6 +309,19 @@ export const ABI = [
 			}
 		],
 		"name": "Received",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newTreasuryAddress",
+				"type": "address"
+			}
+		],
+		"name": "TreasuryAddressUpdated",
 		"type": "event"
 	},
 	{
@@ -755,6 +829,19 @@ export const ABI = [
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "newTreasuryAddress",
+				"type": "address"
+			}
+		],
+		"name": "setTreasuryAddress",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "",
 				"type": "address"
 			}
@@ -796,6 +883,19 @@ export const ABI = [
 		"name": "transferOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "treasuryAddress",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -849,10 +949,9 @@ export const ABI = [
 ];
 
 // src/contracts/FlipGameContract.ts
-export const ADDRESS = "0xf52A34268142237666c4eE6aC264c0AB41CC402B";
+export const ADDRESS = "0x32101B9Bfe78b61b3649Ad2063c481a4BEbF2661";
 
 // Supported tokens -
-// replace with actual token addresses
 export const SUPPORTED_TOKENS = {
   STABLEAI: "0x07F41412697D14981e770b6E335051b1231A2bA8",
   DIG: "0x208561379990f106E6cD59dDc14dFB1F290016aF",
@@ -862,7 +961,6 @@ export const SUPPORTED_TOKENS = {
   RaTcHeT: "0x1d35741c51fb615ca70e28d3321f6f01e8d8a12d",
   GIRTH: "0xa97d71a5fdf906034d9d121ed389665427917ee4",
 };
-
 
 
 // Define the full ERC20 ABI with the required functions
@@ -903,3 +1001,4 @@ export const erc20ABI = [
 ];
 
 // Rest of your component code remains unchanged...
+

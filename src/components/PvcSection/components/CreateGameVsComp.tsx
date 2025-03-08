@@ -1,14 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { SUPPORTED_TOKENS, ADDRESS, ABI } from "../utils/contract";
 import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useReadContract,
   useAccount,
-  /*useConnect,*/ useWatchContractEvent,
+  useConnect, useWatchContractEvent, useDisconnect
 } from "wagmi";
+import Leader from "./LeaderBoard";
+import { Connector } from "@wagmi/core"; 
 
 import { parseUnits, formatUnits } from "viem";
+
+
 
 interface FlipCoinState {
   tokenAddress: string;
@@ -38,7 +42,15 @@ const FlipCoin = () => {
   });
 
   const [requestId, setRequestId] = useState<string | null>(null);
-  const { address, isConnected } = useAccount();
+
+  const { connect, connectors } = useConnect();
+  const { disconnect } = useDisconnect(); // Get the disconnect function
+  const { isConnected, address } = useAccount();
+  
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedConnector, setSelectedConnector] = useState<Connector | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipResult, setFlipResult] = useState<{
     won: boolean | null;
@@ -102,7 +114,8 @@ const FlipCoin = () => {
     useWaitForTransactionReceipt({
       hash: approvalHash,
     });
-  console.log(approvalLoading ? "Approving..." : "Approved");
+    console.log('approve', approvalLoading )
+ 
   // Flip
   const {
     writeContract: writeFlip,
@@ -110,13 +123,14 @@ const FlipCoin = () => {
     isPending: isFlipPending,
   } = useWriteContract();
 
-  console.log(isFlipPending ? "Flipping..." : "Flipped");
+  console.log('flip', isFlipPending)
+
   const { isSuccess: isConfirmed, isLoading: flipConfirmLoading } =
     useWaitForTransactionReceipt({
       hash: flipHash,
     });
 
-  console.log(flipConfirmLoading ? "Flipping..." : "Flipped");
+  console.log('approve' , flipConfirmLoading)
 
   useWatchContractEvent({
     address: ADDRESS,
@@ -219,7 +233,7 @@ const FlipCoin = () => {
   // Monitor approval status
   useEffect(() => {
     if (approvalConfirmed && state.isApproving) {
-      console.log("Approval confirmed, proceeding to flip");
+      
 
       // Execute the flip transaction once approval is confirmed
       try {
@@ -302,6 +316,36 @@ const FlipCoin = () => {
     return null;
   };
 
+  // Add the wallet connection button
+  // Close modal when clicking outside
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedConnector(null);
+  };
+
+  const handleConnectorSelect = (connector: Connector) => {
+    setSelectedConnector(connector);
+  };
+
+  const handleConnect = async () => {
+    if (!selectedConnector) return;
+
+    try {
+      await connect({ connector: selectedConnector }); // Wagmi expects its own Connector type here
+      handleCloseModal();
+    } catch (err) {
+      console.error("Connection failed", err);
+    }
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
+  };
+
   const handleFlipCoin = async () => {
     const validationError = validateInput();
     if (validationError) {
@@ -375,18 +419,102 @@ const FlipCoin = () => {
   };
 
   return (
+    
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950">
-      <div className=" flex justify-start p-4">
-        {address && (
-          <div className="bg-gray-200 rounded-lg px-4 py-2 shadow-sm">
-            <span className="text-gray-800 text-sm font-medium truncate">
-              {`${address.substring(0, 4)}...${address.substring(
-                address.length - 5
-              )}`}
-            </span>
+      <div className="p-4">
+        {!isConnected ? (
+          <button
+            onClick={handleOpenModal}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200"
+          >
+            Connect Wallet
+          </button>
+        ) : (
+          <div className="flex items-center space-x-3 bg-gray-100 rounded-lg px-4 py-2 shadow-sm border border-gray-200 max-w-[230px]">
+            <div className="flex items-center">
+              {selectedConnector?.icon && (
+                <img
+                  src={selectedConnector.icon}
+                  alt={`${selectedConnector.name} icon`}
+                  className="w-5 h-5 mr-2"
+                />
+              )}
+              <span className="text-gray-800 font-medium truncate">
+                {`${address?.substring(0, 6)}...${address?.substring(address.length - 4)}`}
+              </span>
+            </div>
+            <button
+              onClick={handleDisconnect}
+              className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md transition-colors duration-200"
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
+
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div
+              ref={modalRef}
+              className="bg-white rounded-xl shadow-xl w-full max-w-[450px] mx-4 overflow-hidden"
+            >
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-center text-xl font-bold">Connect Wallet</h3>
+              </div>
+              <div className="p-4 max-h-[400px] overflow-y-auto">
+                <div className="grid gap-4 py-2">
+                  {connectors.map((connector) => (
+                    <button
+                      key={connector.id}
+                      onClick={() => handleConnectorSelect(connector)}
+                      className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
+                        selectedConnector?.id === connector.id
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        {connector.icon && (
+                          <img
+                            src={connector.icon}
+                            alt={`${connector.name} icon`}
+                            className="w-8 h-8 mr-3"
+                          />
+                        )}
+                        <span className="font-medium">{connector.name}</span>
+                      </div>
+                      {selectedConnector?.id === connector.id && (
+                        <div className="h-4 w-4 rounded-full bg-blue-500"></div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-6">
+                  <button
+                    onClick={handleConnect}
+                    disabled={!selectedConnector}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                  >
+                    Connect Wallet
+                  </button>
+                </div>
+
+                <div className="mt-3 text-center">
+                  <button
+                    onClick={handleCloseModal}
+                    className="text-gray-500 hover:text-gray-700 font-medium"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+
 
       <div className="bg-[radial-gradient(circle_at_center,_rgba(88,28,135,0.15),_transparent_70%)] min-h-screen p-6 space-y-4">
         {state.error && (
@@ -595,6 +723,7 @@ const FlipCoin = () => {
               </button>
             </div>
           </div>
+          <Leader/>
         </div>
       </div>
     </div>
