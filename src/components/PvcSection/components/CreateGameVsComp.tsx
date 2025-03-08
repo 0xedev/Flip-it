@@ -5,14 +5,14 @@ import {
   useWaitForTransactionReceipt,
   useReadContract,
   useAccount,
-  useConnect, useWatchContractEvent, useDisconnect
+  useConnect,
+  useWatchContractEvent,
+  useDisconnect,
 } from "wagmi";
 import Leader from "./LeaderBoard";
-import { Connector } from "@wagmi/core"; 
+import { Connector } from "@wagmi/core";
 
 import { parseUnits, formatUnits } from "viem";
-
-
 
 interface FlipCoinState {
   tokenAddress: string;
@@ -46,9 +46,11 @@ const FlipCoin = () => {
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect(); // Get the disconnect function
   const { isConnected, address } = useAccount();
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedConnector, setSelectedConnector] = useState<Connector | null>(null);
+  const [selectedConnector, setSelectedConnector] = useState<Connector | null>(
+    null
+  );
   const modalRef = useRef<HTMLDivElement | null>(null);
 
   const [isFlipping, setIsFlipping] = useState(false);
@@ -114,8 +116,8 @@ const FlipCoin = () => {
     useWaitForTransactionReceipt({
       hash: approvalHash,
     });
-    console.log('approve', approvalLoading )
- 
+  console.log("approve", approvalLoading);
+
   // Flip
   const {
     writeContract: writeFlip,
@@ -123,14 +125,14 @@ const FlipCoin = () => {
     isPending: isFlipPending,
   } = useWriteContract();
 
-  console.log('flip', isFlipPending)
+  console.log("flip", isFlipPending);
 
   const { isSuccess: isConfirmed, isLoading: flipConfirmLoading } =
     useWaitForTransactionReceipt({
       hash: flipHash,
     });
 
-  console.log('approve' , flipConfirmLoading)
+  console.log("approve", flipConfirmLoading);
 
   useWatchContractEvent({
     address: ADDRESS,
@@ -233,8 +235,6 @@ const FlipCoin = () => {
   // Monitor approval status
   useEffect(() => {
     if (approvalConfirmed && state.isApproving) {
-      
-
       // Execute the flip transaction once approval is confirmed
       try {
         const amountInWei = parseUnits(state.tokenAmount, decimals);
@@ -419,7 +419,6 @@ const FlipCoin = () => {
   };
 
   return (
-    
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950">
       <div className="p-4">
         {!isConnected ? (
@@ -440,7 +439,9 @@ const FlipCoin = () => {
                 />
               )}
               <span className="text-gray-800 font-medium truncate">
-                {`${address?.substring(0, 6)}...${address?.substring(address.length - 4)}`}
+                {`${address?.substring(0, 6)}...${address?.substring(
+                  address.length - 4
+                )}`}
               </span>
             </div>
             <button
@@ -459,7 +460,9 @@ const FlipCoin = () => {
               className="bg-white rounded-xl shadow-xl w-full max-w-[450px] mx-4 overflow-hidden"
             >
               <div className="p-4 border-b border-gray-200">
-                <h3 className="text-center text-xl font-bold">Connect Wallet</h3>
+                <h3 className="text-center text-xl font-bold">
+                  Connect Wallet
+                </h3>
               </div>
               <div className="p-4 max-h-[400px] overflow-y-auto">
                 <div className="grid gap-4 py-2">
@@ -513,8 +516,6 @@ const FlipCoin = () => {
           </div>
         )}
       </div>
-
-
 
       <div className="bg-[radial-gradient(circle_at_center,_rgba(88,28,135,0.15),_transparent_70%)] min-h-screen p-6 space-y-4">
         {state.error && (
@@ -723,7 +724,7 @@ const FlipCoin = () => {
               </button>
             </div>
           </div>
-          <Leader/>
+          <Leader />
         </div>
       </div>
     </div>
