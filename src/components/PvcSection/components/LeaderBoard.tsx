@@ -419,10 +419,7 @@ const LeaderBoard: React.FC = () => {
             <div>
               {Object.entries(topPlayers).map(([token, players]) => (
                 <div key={token} className="mb-6">
-                  <h2 className="text-xl font-semibold mb-2 flex items-center">
-                    <Trophy className="mr-2 h-5 w-5 text-yellow-500" />
-                    Token: {getTokenName(token)}
-                  </h2>
+                  
                   <div className="overflow-x-auto">
                     <table className="min-w-full bg-white border">
                       <thead className="bg-gray-100">
