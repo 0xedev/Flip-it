@@ -420,7 +420,7 @@ const FlipCoin = () => {
 
   // Add these functions within your component before the return statement
 
-  const handleShare = async (platform: "X" | "telegram" | "copy") => {
+  const handleShare = async (platform: "X" | "warpcast" | "copy") => {
     const message = generateShareMessage();
 
     switch (platform) {
@@ -430,11 +430,9 @@ const FlipCoin = () => {
           "_blank"
         );
         break;
-      case "telegram":
+      case "warpcast":
         window.open(
-          `https://t.me/share/url?url=${encodeURIComponent(
-            window.location.href
-          )}&text=${encodeURIComponent(message)}`,
+          `https://warpcast.com/~/compose?text=${encodeURIComponent(message)}`,
           "_blank"
         );
         break;
@@ -604,32 +602,44 @@ const FlipCoin = () => {
                 <div className="flex justify-center space-x-4">
                   <button
                     onClick={() => handleShare("X")}
-                    className="bg-[#1DA1F2] text-white p-2 rounded-full hover:bg-[#1a91da] transition-colors"
+                    className="p-2 rounded-full hover:bg-gray-200 transition-colors"
                     aria-label="Share on X"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="24"
                       height="24"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
+                      viewBox="0 0 512 512"
+                      fill="#none"
                     >
-                      <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21-.36.1-.74.15-1.13.15-.27 0-.54-.03-.8-.08.54 1.69 2.11 2.95 4 2.98-1.46 1.16-3.31 1.84-5.33 1.84-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z" />
+                      <path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm297.1 84L257.3 234.6 379.4 396H283.8L209 298.1 123.3 396H75.8l111-126.9L69.7 116h98l67.7 89.5L313.6 116h47.5zM323.3 367.6L153.4 142.9H125.1L296.9 367.6h26.3z" />
                     </svg>
                   </button>
                   <button
-                    onClick={() => handleShare("telegram")}
-                    className="bg-[#0088cc] text-white p-2 rounded-full hover:bg-[#0077b3] transition-colors"
-                    aria-label="Share on Telegram"
+                    onClick={() => handleShare("warpcast")}
+                    className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                    aria-label="Share on Warpcast"
                   >
                     <svg
-                      xmlns="http://www.w3.org/2000/svg"
                       width="24"
                       height="24"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
+                      viewBox="0 0 1000 1000"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
+                      <rect width="1000" height="1000" fill="#855DCD" />
+                      <path
+                        d="M257.778 155.556H742.222V844.444H671.111V528.889H670.414C662.554 441.677 589.258 373.333 500 373.333C410.742 373.333 337.446 441.677 329.586 528.889H328.889V844.444H257.778V155.556Z"
+                        fill="white"
+                      />
+                      <path
+                        d="M128.889 253.333L157.778 351.111H182.222V746.667C169.949 746.667 160 756.616 160 768.889V795.556H155.556C143.283 795.556 133.333 805.505 133.333 817.778V844.444H382.222V817.778C382.222 805.505 372.273 795.556 360 795.556H355.556V768.889C355.556 756.616 345.606 746.667 333.333 746.667H306.667V253.333H128.889Z"
+                        fill="white"
+                      />
+                      <path
+                        d="M675.555 746.667C663.282 746.667 653.333 756.616 653.333 768.889V795.556H648.889C636.616 795.556 626.667 805.505 626.667 817.778V844.444H875.555V817.778C875.555 805.505 865.606 795.556 853.333 795.556H848.889V768.889C848.889 756.616 838.94 746.667 826.667 746.667V351.111H851.111L880 253.333H702.222V746.667H675.555Z"
+                        fill="white"
+                      />
                     </svg>
                   </button>
                   <button
