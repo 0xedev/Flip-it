@@ -421,7 +421,7 @@ const FlipCoin = () => {
   // Add these functions within your component before the return statement
 
   const handleShare = async (platform: "X" | "warpcast" | "copy") => {
-    const message = generateShareMessage();
+    const message = generateShareMessage(platform);
 
     switch (platform) {
       case "X":
@@ -451,12 +451,17 @@ const FlipCoin = () => {
     }
   };
 
-  const generateShareMessage = () => {
+  const generateShareMessage = (platform: "X" | "warpcast" | "copy") => {
     const result = flipResult.won ? "won" : "lost";
     const amount = state.tokenAmount;
     const token = state.tokenSymbol;
 
-    return `I just ${result} ${amount} ${token} playing the flip-it game! Try your luck at ${window.location.href}`;
+    const url =
+      platform === "warpcast"
+        ? "https://warpcast.com/~/frames/launch?domain=flip-it-clanker.vercel.app"
+        : window.location.href;
+
+    return `I just ${result} ${amount} ${token} playing the flip-it game! Try your luck at ${url}`;
   };
 
   // Add this state for showing copy confirmation
