@@ -418,6 +418,52 @@ const FlipCoin = () => {
     setRequestId(null);
   };
 
+  // Add these functions within your component before the return statement
+
+  const handleShare = async (platform: "X" | "telegram" | "copy") => {
+    const message = generateShareMessage();
+
+    switch (platform) {
+      case "X":
+        window.open(
+          `https://X.com/intent/tweet?text=${encodeURIComponent(message)}`,
+          "_blank"
+        );
+        break;
+      case "telegram":
+        window.open(
+          `https://t.me/share/url?url=${encodeURIComponent(
+            window.location.href
+          )}&text=${encodeURIComponent(message)}`,
+          "_blank"
+        );
+        break;
+      case "copy":
+        try {
+          await navigator.clipboard.writeText(message);
+          setShareStatus("Copied to clipboard!");
+          setTimeout(() => setShareStatus(""), 2000);
+        } catch (err) {
+          setShareStatus("Failed to copy");
+          console.error("Failed to copy:", err);
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  const generateShareMessage = () => {
+    const result = flipResult.won ? "won" : "lost";
+    const amount = state.tokenAmount;
+    const token = state.tokenSymbol;
+
+    return `I just ${result} ${amount} ${token} playing the cosmic coin flip game! Try your luck at ${window.location.href}`;
+  };
+
+  // Add this state for showing copy confirmation
+  const [shareStatus, setShareStatus] = useState("");
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950">
       <div className="p-4">
@@ -543,14 +589,87 @@ const FlipCoin = () => {
 
         {flipResult.won !== null && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-10 rounded-lg shadow-lg">
-              <h2 className="text-lg font-bold mb-2">
-                {flipResult.won ? "Congratulations!" : "Better luck next time!"}
+            <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+              <h2 className="text-xl font-bold mb-2 text-center">
+                {flipResult.won
+                  ? "🎉 Congratulations!"
+                  : "😢 Better luck next time!"}
               </h2>
-              <p>{flipResult.result}</p>
+              <p className="text-center mb-4">{flipResult.result}</p>
+
+              <div className="border-t border-b border-gray-200 py-4 my-4">
+                <p className="text-center text-gray-700 mb-3 font-medium">
+                  Share your result
+                </p>
+                <div className="flex justify-center space-x-4">
+                  <button
+                    onClick={() => handleShare("X")}
+                    className="bg-[#1DA1F2] text-white p-2 rounded-full hover:bg-[#1a91da] transition-colors"
+                    aria-label="Share on X"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21-.36.1-.74.15-1.13.15-.27 0-.54-.03-.8-.08.54 1.69 2.11 2.95 4 2.98-1.46 1.16-3.31 1.84-5.33 1.84-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleShare("telegram")}
+                    className="bg-[#0088cc] text-white p-2 rounded-full hover:bg-[#0077b3] transition-colors"
+                    aria-label="Share on Telegram"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => handleShare("copy")}
+                    className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
+                    aria-label="Copy to clipboard"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <rect
+                        x="9"
+                        y="9"
+                        width="13"
+                        height="13"
+                        rx="2"
+                        ry="2"
+                      ></rect>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                    </svg>
+                  </button>
+                </div>
+                {shareStatus && (
+                  <p className="text-center mt-2 text-green-600 text-sm animate-fade-in">
+                    {shareStatus}
+                  </p>
+                )}
+              </div>
+
               <button
                 onClick={resetFlipState}
-                className="mt-4 bg-purple-500 text-white px-4 py-2 rounded"
+                className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md transition-colors duration-200 font-medium"
               >
                 Place New Bet
               </button>
