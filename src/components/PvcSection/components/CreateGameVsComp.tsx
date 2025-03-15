@@ -456,7 +456,7 @@ const FlipCoin = () => {
     const amount = state.tokenAmount;
     const token = state.tokenSymbol;
 
-    return `I just ${result} ${amount} ${token} playing the cosmic coin flip game! Try your luck at ${window.location.href}`;
+    return `I just ${result} ${amount} ${token} playing the flip-it game! Try your luck at ${window.location.href}`;
   };
 
   // Add this state for showing copy confirmation
