@@ -4,23 +4,22 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- OpenGraph Fallback (optional but recommended) -->
+    <meta property="og:title" content="FlipIt" />
     <meta
-      name="fc:frame"
-      content='{
-      "version": "next",
-      "imageUrl": "/Users/user/Downloads/FlipIt-frame/src/assets/img.png",
-      "button":{
-        "title": "Flip",
-        "action": {
-          "type": "launch_frame",
-          "name": "FlipIt",
-          "url": "https://flip-it-clanker.vercel.app/",
-          "splashImageUrl": "/Users/user/Downloads/FlipIt-frame/src/assets/img.png",
-          "splashBackgroundColor": "#eeccff"
-        }
-      }
-    }'
-      data-rh="true"
+      property="og:image"
+      content="https://flip-it-clanker.vercel.app/image.png"
+    />
+    <!-- Farcaster Frame Metadata -->
+    <meta name="fc:frame" content="vNext" />
+    <meta
+      name="fc:frame:image"
+      content="https://flip-it-clanker.vercel.app/image.png"
+    />
+    <meta name="fc:frame:button:1" content="Flip" />
+    <meta
+      name="fc:frame:post_url"
+      content="https://flip-it-clanker.vercel.app/api/webhook"
     />
     <title>FlipIt</title>
   </head>
