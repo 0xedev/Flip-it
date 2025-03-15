@@ -7,7 +7,7 @@
   "frame": {
     "version": "1",
     "name": "Flip-It",
-    "iconUrl": "https://flip-it-clanker.vercel.app/icon.svg",
+    "iconUrl": "https://flip-it-clanker.vercel.app/icon.png",
     "homeUrl": "https://flip-it-clanker.vercel.app",
     "imageUrl": "https://flip-it-clanker.vercel.app/image.png",
     "buttonTitle": "Flip",
