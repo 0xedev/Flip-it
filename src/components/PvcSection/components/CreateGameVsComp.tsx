@@ -126,15 +126,22 @@ const FlipCoin = () => {
   });
 
   // Approval
-  const { writeContract: writeApproval, data: approvalHash } =
-    useWriteContract();
+  const {
+    writeContract: writeApproval,
+    data: approvalHash,
+    error: approvalError,
+  } = useWriteContract();
 
   const { isSuccess: approvalConfirmed } = useWaitForTransactionReceipt({
     hash: approvalHash,
   });
 
   // Flip
-  const { writeContract: writeFlip, data: flipHash } = useWriteContract();
+  const {
+    writeContract: writeFlip,
+    data: flipHash,
+    error: flipError,
+  } = useWriteContract();
   const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: flipHash,
   });
@@ -215,6 +222,38 @@ const FlipCoin = () => {
       fetchTokenBalance();
     }
   }, [isBalanceFetching, isSymbolFetching, fetchTokenBalance]);
+
+  // Handle approval cancellation or errors
+  useEffect(() => {
+    if (approvalError) {
+      console.error("Approval error:", approvalError);
+      setState((prev) => ({
+        ...prev,
+        error: approvalError.message.includes("rejected")
+          ? "Approval cancelled by user"
+          : "Approval failed",
+        loading: false,
+        isApproving: false,
+      }));
+      setIsFlipping(false);
+    }
+  }, [approvalError]);
+
+  // Handle flip transaction errors (optional, for completeness)
+  useEffect(() => {
+    if (flipError) {
+      console.error("Flip error:", flipError);
+      setState((prev) => ({
+        ...prev,
+        error: flipError.message.includes("rejected")
+          ? "Transaction cancelled by user"
+          : "Flip transaction failed",
+        loading: false,
+        isApproving: false,
+      }));
+      setIsFlipping(false);
+    }
+  }, [flipError]);
 
   useEffect(() => {
     if (approvalConfirmed && state.isApproving) {
@@ -336,7 +375,6 @@ const FlipCoin = () => {
     }
   };
 
-  // Rest of your functions (handleChoiceClick, resetFlipState, handleShare, etc.) remain unchanged
   const handleChoiceClick = () => {
     setState((prev) => ({ ...prev, face: !prev.face }));
   };
@@ -415,7 +453,7 @@ const FlipCoin = () => {
               )}...${address?.substring(address.length - 4)}`}</span>
             </div>
             <button
-              onClick={() => disconnect()} // Wrap in arrow function
+              onClick={() => disconnect()}
               className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md transition-colors duration-200"
             >
               Disconnect
@@ -492,6 +530,12 @@ const FlipCoin = () => {
         {state.error && (
           <div className="fixed top-4 right-4 bg-red-500/90 text-white px-4 py-2 rounded-md shadow-lg z-50 animate-fade-in">
             {state.error}
+            <button
+              onClick={() => setState((prev) => ({ ...prev, error: null }))}
+              className="ml-2 text-white font-bold"
+            >
+              ×
+            </button>
           </div>
         )}
         {state.success && (
@@ -504,7 +548,9 @@ const FlipCoin = () => {
             <div className="bg-white p-10 rounded-lg shadow-lg">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
               <p className="mt-4 text-center">
-                {state.isApproving ? "Approving tokens..." : "Flipping..."}
+                {state.isApproving
+                  ? "Approving tokens (one-time setup)..."
+                  : "Flipping..."}
               </p>
             </div>
           </div>
