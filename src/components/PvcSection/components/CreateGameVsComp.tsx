@@ -11,7 +11,6 @@ import {
 } from "wagmi";
 import Leader from "./LeaderBoard";
 import { Connector } from "@wagmi/core";
-
 import { parseUnits, formatUnits } from "viem";
 
 interface FlipCoinState {
@@ -42,9 +41,8 @@ const FlipCoin = () => {
   });
 
   const [requestId, setRequestId] = useState<string | null>(null);
-
   const { connect, connectors } = useConnect();
-  const { disconnect } = useDisconnect(); // Get the disconnect function
+  const { disconnect } = useDisconnect();
   const { isConnected, address } = useAccount();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,10 +57,9 @@ const FlipCoin = () => {
     result: string | null;
   }>({ won: null, result: null });
 
-  // const { connect, connectors } = useConnect()
   const decimals = 18;
 
-  // Token contract interactions Done
+  // Token balance and symbol
   const {
     data: balanceData,
     refetch: refetchBalance,
@@ -90,7 +87,6 @@ const FlipCoin = () => {
     query: { enabled: !!address },
   });
 
-  // Token symbolData Done
   const {
     data: symbolData,
     refetch: refetchSymbol,
@@ -109,30 +105,54 @@ const FlipCoin = () => {
     functionName: "symbol",
   });
 
+  // Allowance check
+  const { data: allowanceData, refetch: refetchAllowance } = useReadContract({
+    address: state.tokenAddress as `0x${string}`,
+    abi: [
+      {
+        name: "allowance",
+        type: "function",
+        inputs: [
+          { name: "owner", type: "address" },
+          { name: "spender", type: "address" },
+        ],
+        outputs: [{ name: "", type: "uint256" }],
+        stateMutability: "view",
+      },
+    ],
+    functionName: "allowance",
+    args: [address as `0x${string}`, ADDRESS],
+    query: { enabled: !!address },
+  });
+
   // Approval
   const { writeContract: writeApproval, data: approvalHash } =
     useWriteContract();
-  const { isSuccess: approvalConfirmed, isLoading: approvalLoading } =
-    useWaitForTransactionReceipt({
-      hash: approvalHash,
-    });
-  console.log("approve", approvalLoading);
+
+  const { isSuccess: approvalConfirmed } = useWaitForTransactionReceipt({
+    hash: approvalHash,
+  });
 
   // Flip
-  const {
-    writeContract: writeFlip,
-    data: flipHash,
-    isPending: isFlipPending,
-  } = useWriteContract();
+  const { writeContract: writeFlip, data: flipHash } = useWriteContract();
+  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: flipHash,
+  });
 
-  console.log("flip", isFlipPending);
-
-  const { isSuccess: isConfirmed, isLoading: flipConfirmLoading } =
-    useWaitForTransactionReceipt({
-      hash: flipHash,
-    });
-
-  console.log("approve", flipConfirmLoading);
+  // Event listeners
+  useWatchContractEvent({
+    address: ADDRESS,
+    abi: ABI,
+    eventName: "BetSent",
+    onLogs(logs) {
+      logs.forEach((log) => {
+        const {
+          args: { requestId: eventRequestId },
+        } = log as any;
+        setRequestId(eventRequestId.toString());
+      });
+    },
+  });
 
   useWatchContractEvent({
     address: ADDRESS,
@@ -142,40 +162,7 @@ const FlipCoin = () => {
       logs.forEach((log) => {
         const {
           args: { requestId: eventRequestId },
-        } = log as typeof log & {
-          args: {
-            payment: bigint;
-            randomWords: bigint[];
-            requestId: bigint;
-            resolved: boolean;
-            rolled: bigint;
-            status: string;
-            userWon: boolean;
-          };
-        };
-        setRequestId(eventRequestId.toString());
-      });
-    },
-    onError(error) {
-      console.error("Error in useWatchContractEvent:", error);
-    },
-  });
-
-  useWatchContractEvent({
-    address: ADDRESS,
-    abi: ABI,
-    eventName: "BetSent",
-    onLogs(logs) {
-      logs.forEach((log) => {
-        const {
-          args: { requestId: eventRequestId, numWords },
-        } = log as typeof log & {
-          args: {
-            requestId: bigint;
-            numWords: number;
-          };
-        };
-        console.log("Number of Words:", numWords);
+        } = log as any;
         setRequestId(eventRequestId.toString());
       });
     },
@@ -198,9 +185,7 @@ const FlipCoin = () => {
     abi: ABI,
     functionName: "getGameOutcome",
     args: [requestId ? BigInt(requestId) : BigInt(0)],
-    query: {
-      enabled: !!requestId && !!betStatus?.[1],
-    },
+    query: { enabled: !!requestId && !!betStatus?.[1] },
   }) as {
     data:
       | [boolean, boolean, boolean, boolean, bigint, bigint, string]
@@ -218,45 +203,29 @@ const FlipCoin = () => {
     }
   }, [balanceData, symbolData]);
 
-  // Update balance and symbol when tokenAddress changes
   useEffect(() => {
     setState((prev) => ({ ...prev, isBalanceLoading: true }));
     refetchBalance();
     refetchSymbol();
-  }, [state.tokenAddress, refetchBalance, refetchSymbol]);
+    refetchAllowance();
+  }, [state.tokenAddress, refetchBalance, refetchSymbol, refetchAllowance]);
 
-  // Sync state with fetched data
   useEffect(() => {
     if (!isBalanceFetching && !isSymbolFetching) {
       fetchTokenBalance();
     }
   }, [isBalanceFetching, isSymbolFetching, fetchTokenBalance]);
 
-  // Monitor approval status
   useEffect(() => {
     if (approvalConfirmed && state.isApproving) {
-      // Execute the flip transaction once approval is confirmed
-      try {
-        const amountInWei = parseUnits(state.tokenAmount, decimals);
-        writeFlip({
-          address: ADDRESS,
-          abi: ABI,
-          functionName: "flip",
-          args: [state.face, state.tokenAddress as `0x${string}`, amountInWei],
-        });
-
-        // Update state to show we're no longer approving, but still flipping
-        setState((prev) => ({ ...prev, isApproving: false }));
-      } catch (error) {
-        console.error("Error executing flip after approval:", error);
-        setState((prev) => ({
-          ...prev,
-          error: error instanceof Error ? error.message : "Failed to flip",
-          loading: false,
-          isApproving: false,
-        }));
-        setIsFlipping(false);
-      }
+      const amountInWei = parseUnits(state.tokenAmount, decimals);
+      writeFlip({
+        address: ADDRESS,
+        abi: ABI,
+        functionName: "flip",
+        args: [state.face, state.tokenAddress as `0x${string}`, amountInWei],
+      });
+      setState((prev) => ({ ...prev, isApproving: false }));
     }
   }, [
     approvalConfirmed,
@@ -267,7 +236,6 @@ const FlipCoin = () => {
     writeFlip,
   ]);
 
-  // Effect for handling the completion of the flip transaction
   useEffect(() => {
     if (isConfirmed && flipHash) {
       setState((prev) => ({
@@ -276,34 +244,24 @@ const FlipCoin = () => {
         isBalanceLoading: true,
         success: "Transaction confirmed, waiting for result...",
       }));
-
-      // Keep the flipping UI visible while waiting for the result
       setIsFlipping(true);
     }
   }, [isConfirmed, flipHash]);
 
-  // Monitor bet outcome
   useEffect(() => {
-    if (betStatus && requestId) {
-      if (betStatus[1] && gameOutcome) {
-        // Game is resolved
-        setFlipResult({
-          won: gameOutcome[1],
-          result: `You ${gameOutcome[1] ? "Won" : "Lost"}. Choice: ${
-            gameOutcome[2] ? "Tails" : "Heads"
-          }, Outcome: ${gameOutcome[3] ? "Tails" : "Heads"}`,
-        });
-
-        setState((prev) => ({
-          ...prev,
-          success: "Game completed",
-          loading: false,
-          isApproving: false,
-        }));
-
-        // The UI will still show the flipping overlay until the user closes it
-        refetchBalance();
-      }
+    if (betStatus && requestId && betStatus[1] && gameOutcome) {
+      setFlipResult({
+        won: gameOutcome[1],
+        result: `You ${gameOutcome[1] ? "Won" : "Lost"}. Choice: ${
+          gameOutcome[2] ? "Tails" : "Heads"
+        }, Outcome: ${gameOutcome[3] ? "Tails" : "Heads"}`,
+      });
+      setState((prev) => ({
+        ...prev,
+        success: "Game completed",
+        loading: false,
+      }));
+      refetchBalance();
     }
   }, [betStatus, gameOutcome, requestId, refetchBalance]);
 
@@ -316,36 +274,6 @@ const FlipCoin = () => {
     return null;
   };
 
-  // Add the wallet connection button
-  // Close modal when clicking outside
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedConnector(null);
-  };
-
-  const handleConnectorSelect = (connector: Connector) => {
-    setSelectedConnector(connector);
-  };
-
-  const handleConnect = async () => {
-    if (!selectedConnector) return;
-
-    try {
-      await connect({ connector: selectedConnector }); // Wagmi expects its own Connector type here
-      handleCloseModal();
-    } catch (err) {
-      console.error("Connection failed", err);
-    }
-  };
-
-  const handleDisconnect = () => {
-    disconnect();
-  };
-
   const handleFlipCoin = async () => {
     const validationError = validateInput();
     if (validationError) {
@@ -353,46 +281,54 @@ const FlipCoin = () => {
       return;
     }
 
-    // Reset any previous state
     setState((prev) => ({
       ...prev,
       loading: true,
       error: null,
       success: null,
-      isApproving: true,
     }));
-
     setIsFlipping(true);
 
     try {
       const amountInWei = parseUnits(state.tokenAmount, decimals);
+      const currentAllowance = allowanceData
+        ? BigInt(allowanceData as bigint)
+        : BigInt(0);
 
-      // Request token approval
-      writeApproval({
-        address: state.tokenAddress as `0x${string}`,
-        abi: [
-          {
-            name: "approve",
-            type: "function",
-            inputs: [
-              { name: "spender", type: "address" },
-              { name: "amount", type: "uint256" },
-            ],
-            outputs: [{ name: "", type: "bool" }],
-            stateMutability: "nonpayable",
-          },
-        ],
-        functionName: "approve",
-        args: [ADDRESS, amountInWei],
-      });
-
-      // The flip transaction will be executed in the useEffect that watches approvalConfirmed
+      // Check if approval is needed
+      if (currentAllowance < amountInWei) {
+        setState((prev) => ({ ...prev, isApproving: true }));
+        writeApproval({
+          address: state.tokenAddress as `0x${string}`,
+          abi: [
+            {
+              name: "approve",
+              type: "function",
+              inputs: [
+                { name: "spender", type: "address" },
+                { name: "amount", type: "uint256" },
+              ],
+              outputs: [{ name: "", type: "bool" }],
+              stateMutability: "nonpayable",
+            },
+          ],
+          functionName: "approve",
+          args: [ADDRESS, BigInt("2") ** BigInt("256") - BigInt("1")], // MaxUint256
+        });
+      } else {
+        // If already approved, proceed directly to flip
+        writeFlip({
+          address: ADDRESS,
+          abi: ABI,
+          functionName: "flip",
+          args: [state.face, state.tokenAddress as `0x${string}`, amountInWei],
+        });
+      }
     } catch (error) {
-      console.error("Approval Error:", error);
+      console.error("Error in flip:", error);
       setState((prev) => ({
         ...prev,
-        error:
-          error instanceof Error ? error.message : "Failed to approve token",
+        error: error instanceof Error ? error.message : "Transaction failed",
         loading: false,
         isApproving: false,
       }));
@@ -400,12 +336,12 @@ const FlipCoin = () => {
     }
   };
 
+  // Rest of your functions (handleChoiceClick, resetFlipState, handleShare, etc.) remain unchanged
   const handleChoiceClick = () => {
     setState((prev) => ({ ...prev, face: !prev.face }));
   };
 
   const resetFlipState = () => {
-    // Reset all game-related state to allow a new bet
     setFlipResult({ won: null, result: null });
     setState((prev) => ({
       ...prev,
@@ -418,11 +354,8 @@ const FlipCoin = () => {
     setRequestId(null);
   };
 
-  // Add these functions within your component before the return statement
-
   const handleShare = async (platform: "X" | "warpcast" | "copy") => {
     const message = generateShareMessage(platform);
-
     switch (platform) {
       case "X":
         window.open(
@@ -437,42 +370,31 @@ const FlipCoin = () => {
         );
         break;
       case "copy":
-        try {
-          await navigator.clipboard.writeText(message);
-          setShareStatus("Copied to clipboard!");
-          setTimeout(() => setShareStatus(""), 2000);
-        } catch (err) {
-          setShareStatus("Failed to copy");
-          console.error("Failed to copy:", err);
-        }
-        break;
-      default:
+        await navigator.clipboard.writeText(message);
+        setShareStatus("Copied to clipboard!");
+        setTimeout(() => setShareStatus(""), 2000);
         break;
     }
   };
 
   const generateShareMessage = (platform: "X" | "warpcast" | "copy") => {
     const result = flipResult.won ? "won" : "lost";
-    const amount = state.tokenAmount;
-    const token = state.tokenSymbol;
-
     const url =
       platform === "warpcast"
         ? "https://warpcast.com/~/frames/launch?domain=flip-it-clanker.vercel.app"
         : window.location.href;
-
-    return `I just ${result} ${amount} ${token} playing the flip-it game! Try your luck at ${url}`;
+    return `I just ${result} ${state.tokenAmount} ${state.tokenSymbol} playing the flip-it game! Try your luck at ${url}`;
   };
 
-  // Add this state for showing copy confirmation
   const [shareStatus, setShareStatus] = useState("");
 
+  // UI rendering (modified slightly for better feedback)
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-950 via-purple-900 to-purple-950">
       <div className="p-4">
         {!isConnected ? (
           <button
-            onClick={handleOpenModal}
+            onClick={() => setIsModalOpen(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200"
           >
             Connect Wallet
@@ -487,14 +409,13 @@ const FlipCoin = () => {
                   className="w-5 h-5 mr-2"
                 />
               )}
-              <span className="text-gray-800 font-medium truncate">
-                {`${address?.substring(0, 6)}...${address?.substring(
-                  address.length - 4
-                )}`}
-              </span>
+              <span className="text-gray-800 font-medium truncate">{`${address?.substring(
+                0,
+                6
+              )}...${address?.substring(address.length - 4)}`}</span>
             </div>
             <button
-              onClick={handleDisconnect}
+              onClick={() => disconnect()} // Wrap in arrow function
               className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md transition-colors duration-200"
             >
               Disconnect
@@ -518,7 +439,7 @@ const FlipCoin = () => {
                   {connectors.map((connector) => (
                     <button
                       key={connector.id}
-                      onClick={() => handleConnectorSelect(connector)}
+                      onClick={() => setSelectedConnector(connector)}
                       className={`flex items-center justify-between p-4 rounded-lg border transition-colors ${
                         selectedConnector?.id === connector.id
                           ? "border-blue-500 bg-blue-50"
@@ -541,20 +462,21 @@ const FlipCoin = () => {
                     </button>
                   ))}
                 </div>
-
                 <div className="mt-6">
                   <button
-                    onClick={handleConnect}
+                    onClick={() =>
+                      selectedConnector &&
+                      connect({ connector: selectedConnector })
+                    }
                     disabled={!selectedConnector}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                   >
                     Connect Wallet
                   </button>
                 </div>
-
                 <div className="mt-3 text-center">
                   <button
-                    onClick={handleCloseModal}
+                    onClick={() => setIsModalOpen(false)}
                     className="text-gray-500 hover:text-gray-700 font-medium"
                   >
                     Cancel
@@ -572,24 +494,23 @@ const FlipCoin = () => {
             {state.error}
           </div>
         )}
-
         {state.success && (
           <div className="fixed top-4 right-4 bg-green-500/90 text-white px-4 py-2 rounded-md shadow-lg z-50 animate-fade-in">
             {state.success}
           </div>
         )}
-
         {isFlipping && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-10 rounded-lg shadow-lg">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500"></div>
               <p className="mt-4 text-center">
-                {state.isApproving ? "Approving..." : "Flipping..."}
+                {state.isApproving
+                  ? "Approving tokens (one-time setup)..."
+                  : "Flipping..."}
               </p>
             </div>
           </div>
         )}
-
         {flipResult.won !== null && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -599,7 +520,6 @@ const FlipCoin = () => {
                   : "😢 Better luck next time!"}
               </h2>
               <p className="text-center mb-4">{flipResult.result}</p>
-
               <div className="border-t border-b border-gray-200 py-4 my-4">
                 <p className="text-center text-gray-700 mb-3 font-medium">
                   Share your result
@@ -681,7 +601,6 @@ const FlipCoin = () => {
                   </p>
                 )}
               </div>
-
               <button
                 onClick={resetFlipState}
                 className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md transition-colors duration-200 font-medium"
@@ -807,12 +726,9 @@ const FlipCoin = () => {
                 min="0"
                 placeholder="0.00"
                 value={state.tokenAmount}
-                onChange={(e) => {
-                  setState((prev) => ({
-                    ...prev,
-                    tokenAmount: e.target.value,
-                  }));
-                }}
+                onChange={(e) =>
+                  setState((prev) => ({ ...prev, tokenAmount: e.target.value }))
+                }
                 className="w-full bg-purple-900/50 border border-purple-700/30 text-purple-100 rounded-md p-2 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-purple-600/50"
                 disabled={state.loading || state.isApproving}
               />
@@ -849,7 +765,9 @@ const FlipCoin = () => {
                       />
                     </svg>
                     <span>
-                      {state.isApproving ? "Approving..." : "Flipping..."}
+                      {state.isApproving
+                        ? "Approving (one-time)..."
+                        : "Flipping..."}
                     </span>
                   </div>
                 ) : (

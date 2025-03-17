@@ -106,11 +106,31 @@ export const flip = async (
       throw new Error("Insufficient token balance");
     }
 
+    // Check if the contract already has sufficient allowance
+    const signerAddress = await signer.getAddress();
+    const currentAllowance = await tokenContract.allowance(
+      signerAddress,
+      ADDRESS
+    );
+
+    // Only approve if the current allowance is less than the bet amount
+    if (currentAllowance < tokenAmountInWei) {
+      // For better UX, we approve a large amount (or max) to avoid frequent approvals
+      // Using MaxUint256 for unlimited approval
+      const maxApproval = ethers.MaxUint256; // or ethers.parseUnits("1000000", 18) for a large fixed amount
+
+      console.log("Approving tokens for future bets...");
+      const approveTx = await tokenContract.approve(ADDRESS, maxApproval);
+      await approveTx.wait();
+      console.log("Token approval successful!");
+    }
+
     // Approve tokens
-    const approveTx = await tokenContract.approve(ADDRESS, tokenAmountInWei);
-    await approveTx.wait();
+    // const approveTx = await tokenContract.approve(ADDRESS, tokenAmountInWei);
+    // await approveTx.wait();
 
     // Send the flip transaction
+    console.log("Placing bet...");
     const tx = await contract.flip(face, tokenAddress, tokenAmountInWei);
 
     const receipt = await tx.wait();
@@ -134,6 +154,39 @@ export const flip = async (
     };
   } catch (error) {
     console.error("Error in flip function:", error);
+    handleContractError(error as ContractError);
+    throw error;
+  }
+};
+
+export const approveToken = async (tokenAddress: string) => {
+  try {
+    const { signer } = await setupContractWithSigner();
+
+    // Create token contract instance
+    const tokenContract = new ethers.Contract(
+      tokenAddress,
+      [
+        "function allowance(address owner, address spender) external view returns (uint256)",
+        "function approve(address spender, uint256 amount) external returns (bool)",
+      ],
+      signer
+    );
+
+    // Use maximum approval to avoid future approval transactions
+    const maxApproval = ethers.MaxUint256;
+
+    // Send approval transaction
+    const approveTx = await tokenContract.approve(ADDRESS, maxApproval);
+    const receipt = await approveTx.wait();
+
+    return {
+      success: true,
+      receipt,
+      message: "Token approved successfully for unlimited betting!",
+    };
+  } catch (error) {
+    console.error("Error approving token:", error);
     handleContractError(error as ContractError);
     throw error;
   }
