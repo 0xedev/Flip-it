@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import HomePage from "./components/HomePage";
 import Pvc from "./components/PvcSection/Pvc";
-import Pvp from "./components/PvcSection/Pvp";
+import Pvp from "./components/Pvp";
 import FAQ from "./components/PvcSection/FAQ";
 import "./App.css";
 
