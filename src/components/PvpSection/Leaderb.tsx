@@ -246,11 +246,11 @@ const LeaderBoard: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const result = await client.query<{ betResults: PlayerBetData[] }>({
+        const result = await client.query<{ pendingBetPlaceds: PlayerBetData[] }>({
           query: PLAYER_BETS_QUERY,
           variables: { address: address },
         });
-        setPlayerBets(result.data.betResults);
+        setPlayerBets(result.data.pendingBetPlaceds || []);
       } catch (err) {
         setError("Failed to load player-specific bet data");
       } finally {
@@ -270,12 +270,11 @@ const LeaderBoard: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const totalPages = Math.ceil(allBets.length / itemsPerPage);
-  const paginatedBets = allBets.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+ const totalPages = Math.ceil((allBets || []).length / itemsPerPage); 
+const paginatedBets = (allBets || []).slice(
+  (currentPage - 1) * itemsPerPage,
+  currentPage * itemsPerPage
+);
   const goToNextPage = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
@@ -352,7 +351,7 @@ const LeaderBoard: React.FC = () => {
       {!loading && !error && (
         <div className="tab-content">
           {/* All Bets Tab */}
-          {activeTab === "all-bets" && paginatedBets.length > 0 && (
+          {activeTab === "all-bets"  && (paginatedBets || []).length > 0 &&  (
             <div>
               {/* Desktop Table */}
               <div className=" text-black hidden sm:block overflow-x-auto">
@@ -564,7 +563,7 @@ const LeaderBoard: React.FC = () => {
             )}
 
           {/* Player Bets Tab */}
-          {activeTab === "player-bets" && playerBets.length > 0 && (
+          {activeTab === "player-bets" && (playerBets || []).length > 0 && (
             <div>
               {/* Desktop Table */}
               <div className="hidden sm:block overflow-x-auto">
@@ -628,9 +627,9 @@ const LeaderBoard: React.FC = () => {
           )}
 
           {/* No Data Messages */}
-          {activeTab === "all-bets" && allBets.length === 0 && !loading && (
-            <div className="text-center py-4">No bets available.</div>
-          )}
+         {activeTab === "all-bets" && (allBets || []).length === 0 && !loading && (
+  <div className="text-center py-4">No bets available.</div>
+)}
           {activeTab === "token-leaderboard" &&
             (!selectedToken ||
               !topPlayers ||
@@ -642,13 +641,9 @@ const LeaderBoard: React.FC = () => {
                   : "Please select a token to view the leaderboard."}
               </div>
             )}
-          {activeTab === "player-bets" &&
-            playerBets.length === 0 &&
-            !loading && (
-              <div className="text-center py-4">
-                You haven't placed any bets yet.
-              </div>
-            )}
+          {activeTab === "player-bets" && (playerBets || []).length === 0 && !loading && (
+  <div className="text-center py-4">You haven't placed any bets yet.</div>
+)}
         </div>
       )}
     </div>
