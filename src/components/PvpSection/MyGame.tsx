@@ -32,7 +32,7 @@ const LoadingSpinner = () => (
     <span className="text-xl font-semibold loading-text text-black">
       Processing transaction...
     </span>
-  </div>  
+  </div>
 );
 
 const MyGame: React.FC = () => {
@@ -86,6 +86,7 @@ const MyGame: React.FC = () => {
     abi: ABI,
     eventName: "BetPlaced",
     onLogs() {
+      console.log("BetPlaced event received");
       refetchPendingBets();
       setSuccess("Bet placed successfully!");
       setTimeout(() => setSuccess(null), 5000);
@@ -97,6 +98,7 @@ const MyGame: React.FC = () => {
     abi: ABI,
     eventName: "MatchCreated",
     onLogs() {
+      console.log("MatchCreated event received");
       refetchPendingBets();
       setSuccess("Successfully joined the game!");
       setTimeout(() => setSuccess(null), 5000);
@@ -108,6 +110,7 @@ const MyGame: React.FC = () => {
     abi: ABI,
     eventName: "BetCanceled",
     onLogs() {
+      console.log("BetCanceled event received");
       refetchPendingBets();
       setSuccess("Bet successfully canceled!");
       setTimeout(() => setSuccess(null), 5000);
@@ -249,10 +252,6 @@ const MyGame: React.FC = () => {
     const token = SUPPORTED_TOKENS.find(t => t.address.toLowerCase() === address.toLowerCase());
     console.log("Token symbol for address", address, ":", token?.symbol || "???");
     return token?.symbol || "???";
-  };
-
-  const formatAddress = (addr: string) => {
-    return `${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}`;
   };
 
   const getTimeDiff = (timestamp: bigint) => {

@@ -1,9 +1,42 @@
 [
 	{
+		"inputs": [],
+		"name": "acceptOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "initialTreasuryAddress",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "addToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			}
+		],
+		"name": "cancelBet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_treasuryAddress",
 				"type": "address"
 			}
 		],
@@ -37,131 +70,26 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
-				"name": "status",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256[]",
-				"name": "randomWords",
-				"type": "uint256[]"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "payment",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "resolved",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "rolled",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "userWon",
-				"type": "bool"
-			}
-		],
-		"name": "BetFulfilled",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
 				"internalType": "address",
-				"name": "player",
+				"name": "player1",
 				"type": "address"
 			},
 			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "requestId",
-				"type": "uint256"
-			},
-			{
 				"indexed": false,
-				"internalType": "bool",
-				"name": "playerChoice",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "outcome",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "userWon",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "profit",
-				"type": "uint256"
-			}
-		],
-		"name": "BetResult",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "requestId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint32",
-				"name": "numWords",
-				"type": "uint32"
-			}
-		],
-		"name": "BetSent",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
 				"internalType": "address",
-				"name": "player",
+				"name": "player2",
 				"type": "address"
 			},
 			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "requestId",
-				"type": "uint256"
-			},
-			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "betAmount",
+				"name": "amount",
 				"type": "uint256"
 			},
 			{
 				"indexed": false,
 				"internalType": "bool",
-				"name": "playerChoice",
+				"name": "player1Face",
 				"type": "bool"
 			},
 			{
@@ -173,33 +101,8 @@
 			{
 				"indexed": false,
 				"internalType": "address",
-				"name": "token",
+				"name": "winner",
 				"type": "address"
-			}
-		],
-		"name": "GameLost",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "uint256",
-				"name": "requestId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "betAmount",
-				"type": "uint256"
 			},
 			{
 				"indexed": false,
@@ -209,24 +112,164 @@
 			},
 			{
 				"indexed": false,
-				"internalType": "bool",
-				"name": "playerChoice",
-				"type": "bool"
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "AllGameInfo",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
 			},
 			{
 				"indexed": false,
-				"internalType": "bool",
-				"name": "outcome",
-				"type": "bool"
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			}
+		],
+		"name": "BetCanceled",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
 			},
 			{
 				"indexed": false,
 				"internalType": "address",
 				"name": "token",
 				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "face",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "timeout",
+				"type": "uint256"
 			}
 		],
-		"name": "GameWon",
+		"name": "BetPlaced",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bool",
+				"name": "face",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "betTimeout",
+				"type": "uint256"
+			}
+		],
+		"name": "createGame",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			}
+		],
+		"name": "joinGame",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "requestId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "player1",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "player2",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "numWords",
+				"type": "uint256"
+			}
+		],
+		"name": "MatchCreated",
 		"type": "event"
 	},
 	{
@@ -271,7 +314,19 @@
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
 				"internalType": "address",
 				"name": "token",
 				"type": "address"
@@ -279,54 +334,39 @@
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "newBalance",
+				"name": "amount",
 				"type": "uint256"
 			},
 			{
 				"indexed": false,
-				"internalType": "uint256",
-				"name": "profit",
-				"type": "uint256"
-			}
-		],
-		"name": "Payout",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "",
-				"type": "address"
+				"internalType": "bool",
+				"name": "face",
+				"type": "bool"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "",
+				"name": "timeout",
 				"type": "uint256"
 			}
 		],
-		"name": "Received",
+		"name": "PendingBetPlaced",
 		"type": "event"
 	},
 	{
-		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newTreasuryAddress",
-				"type": "address"
+				"internalType": "uint256",
+				"name": "_requestId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "_randomWords",
+				"type": "uint256[]"
 			}
 		],
-		"name": "TreasuryAddressUpdated",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "acceptOwnership",
+		"name": "rawFulfillRandomWords",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -339,10 +379,58 @@
 				"type": "address"
 			}
 		],
-		"name": "addToken",
+		"name": "removeAllowedToken",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newTreasury",
+				"type": "address"
+			}
+		],
+		"name": "updateTreasuryAddress",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	},
 	{
 		"inputs": [
@@ -364,37 +452,13 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			}
-		],
-		"name": "approveToken",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "approvedTokens",
+		"inputs": [],
+		"name": "betCounter",
 		"outputs": [
 			{
-				"internalType": "bool",
+				"internalType": "uint256",
 				"name": "",
-				"type": "bool"
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -414,77 +478,6 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "coinTossBets",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "face",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "rolled",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "depositERC20",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bool",
-				"name": "face",
-				"type": "bool"
-			},
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenAmount",
-				"type": "uint256"
-			}
-		],
-		"name": "flip",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "getBalance",
 		"outputs": [
@@ -501,7 +494,7 @@
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "_requestId",
+				"name": "requestId",
 				"type": "uint256"
 			}
 		],
@@ -518,57 +511,18 @@
 				"type": "bool"
 			},
 			{
-				"internalType": "bool",
-				"name": "bet",
-				"type": "bool"
+				"internalType": "address",
+				"name": "player1",
+				"type": "address"
 			},
 			{
-				"internalType": "uint256[]",
-				"name": "randomWords",
-				"type": "uint256[]"
-			},
-			{
-				"internalType": "string",
-				"name": "status",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "rolled",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "player2",
+				"type": "address"
 			},
 			{
 				"internalType": "bool",
-				"name": "userWon",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "requestId",
-				"type": "uint256"
-			}
-		],
-		"name": "getGameOutcome",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "isComplete",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "playerWon",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "playerChoice",
+				"name": "player1Face",
 				"type": "bool"
 			},
 			{
@@ -577,19 +531,19 @@
 				"type": "bool"
 			},
 			{
-				"internalType": "uint256",
-				"name": "betAmount",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "winner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
 			},
 			{
 				"internalType": "uint256",
-				"name": "potentialPayout",
+				"name": "amount",
 				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "resultDescription",
-				"type": "string"
 			}
 		],
 		"stateMutability": "view",
@@ -609,38 +563,45 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "requestId",
-				"type": "uint256"
-			}
-		],
-		"name": "getRandomWords",
+		"inputs": [],
+		"name": "getPendingBets",
 		"outputs": [
 			{
-				"internalType": "uint256",
+				"components": [
+					{
+						"internalType": "address",
+						"name": "player",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "face",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timeout",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct FlipCoinPvP.PendingBet[]",
 				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			}
-		],
-		"name": "getTokenBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
+				"type": "tuple[]"
 			}
 		],
 		"stateMutability": "view",
@@ -660,12 +621,58 @@
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "lastRequestId",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "uint256",
 				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "matches",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "player1",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "player2",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "player1Face",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "fulfilled",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "outcome",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "paid",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "id",
 				"type": "uint256"
 			}
 		],
@@ -702,31 +709,63 @@
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "_requestId",
+				"name": "",
 				"type": "uint256"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "_randomWords",
-				"type": "uint256[]"
 			}
 		],
-		"name": "rawFulfillRandomWords",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"name": "pendingBetIds",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "pendingBets",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
 				"internalType": "address",
 				"name": "token",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "face",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timeout",
+				"type": "uint256"
 			}
 		],
-		"name": "removeAllowedToken",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -743,14 +782,8 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "requestIds",
+		"inputs": [],
+		"name": "timeout",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -759,130 +792,6 @@
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "s_requests",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "bet",
-				"type": "bool"
-			},
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "tokenAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "id",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "paid",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "fulfilled",
-				"type": "bool"
-			},
-			{
-				"internalType": "string",
-				"name": "status",
-				"type": "string"
-			},
-			{
-				"internalType": "uint256",
-				"name": "rolled",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "userWon",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newTreasuryAddress",
-				"type": "address"
-			}
-		],
-		"name": "setTreasuryAddress",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "tokens",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "allowed",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "paused",
-				"type": "bool"
-			},
-			{
-				"internalType": "uint16",
-				"name": "balanceRisk",
-				"type": "uint16"
-			},
-			{
-				"internalType": "uint256",
-				"name": "minBetAmount",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -899,37 +808,6 @@
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawNative",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawToken",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "wrapperAddress",
 		"outputs": [
@@ -941,9 +819,5 @@
 		],
 		"stateMutability": "view",
 		"type": "function"
-	},
-	{
-		"stateMutability": "payable",
-		"type": "receive"
 	}
 ]

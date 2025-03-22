@@ -1,10 +1,9 @@
 
 import { Link } from "react-router-dom";
-import { Home, PlusCircle, Trophy, Info, Gamepad, User } from "lucide-react";
+import { Home, PlusCircle,  Gamepad, User } from "lucide-react";
 import GameList from "./PvpSection/Available";
 import CreateGame from "./PvpSection/CreateGame";
 import Leaderb from "./PvpSection/Leaderb";
-import Gameinfo from "./PvpSection/GameStat";
 import MyGame from "./PvpSection/MyGame";
 import Modal from "./PvpSection/Modal";
 import { Connector } from "@wagmi/core";
@@ -13,7 +12,7 @@ import {
   useConnect,
   useDisconnect,
 } from "wagmi";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState,  useRef } from "react";
 
 const Pvp = () => {
   const [showModal, setShowModal] = useState(false);
@@ -220,20 +219,11 @@ const Pvp = () => {
 
           {/* Footer Actions */}
           <div className="flex flex-wrap justify-center gap-4">
-            <button
-              onClick={() => openModal(<Gameinfo />)}
-              className="flex items-center space-x-2 px-6 py-3 rounded-lg border border-purple-600 text-purple-200 hover:bg-purple-800/50 transition-all duration-300"
-            >
-              <Info className="w-4 h-4" />
-              <span>Game Info</span>
-            </button>
-            <button
-              onClick={() => openModal(<Leaderb />)}
-              className="flex items-center space-x-2 px-6 py-3 rounded-lg border border-purple-600 text-purple-200 hover:bg-purple-800/50 transition-all duration-300"
-            >
-              <Trophy className="w-4 h-4" />
-              <span>Leaderboard</span>
-            </button>
+          
+            <div className="flex items-center space-x-2 px-6 py-3 rounded-lg max-w-full">
+              <Leaderb />
+            </div>
+             
           </div>
         </main>
       </div>
