@@ -2,22 +2,25 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta property="og:title" content="FlipIt" />
     <meta
-      property="og:image"
-      content="https://flip-it-clanker.vercel.app/image.png"
-    />
-    <meta name="fc:frame" content="vNext" />
-    <meta
-      name="fc:frame:image"
-      content="https://flip-it-clanker.vercel.app/image.png"
-    />
-    <meta name="fc:frame:button:1" content="Flip" />
-    <meta
-      name="fc:frame:post_url"
-      content="https://flip-it-clanker.vercel.app/api/webhook"
+      name="fc:frame"
+      content='{
+      "version": "next",
+      "imageUrl": "https://flip-it-clanker.vercel.app/image.png",
+      "button":{
+        "title": "Ready to Flip?",
+        "action": {
+          "type": "launch_frame",
+          "name": "FlipIt",
+          "url": "https://flip-it-clanker.vercel.app/image.png",
+          "splashImageUrl": "https://flip-it-clanker.vercel.app/icon.svg",
+          "splashBackgroundColor": "#131313"
+        }
+      }
+    }'
+      data-rh="true"
     />
     <title>FlipIt</title>
   </head>

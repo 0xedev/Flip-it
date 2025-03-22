@@ -419,7 +419,7 @@ const FlipCoin = () => {
     const result = flipResult.won ? "won" : "lost";
     const url =
       platform === "warpcast"
-        ? "https://warpcast.com/~/frames/launch?domain=flip-it-clanker.vercel.app"
+        ? "https://flip-it-clanker.vercel.app/"
         : window.location.href;
     return `I just ${result} ${state.tokenAmount} ${state.tokenSymbol} playing the flip-it game! Try your luck at ${url}`;
   };
