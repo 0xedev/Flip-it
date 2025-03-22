@@ -26,6 +26,14 @@ interface FlipCoinState {
   isBalanceLoading: boolean;
 }
 
+interface FlipResult {
+  won: boolean | null;
+  result: string | null;
+  choice: string | null; // "Heads" or "Tails"
+  outcome: string | null; // "Heads" or "Tails"
+  txHash: string | null;
+}
+
 const FlipCoin = () => {
   const [state, setState] = useState<FlipCoinState>({
     face: false,
@@ -52,10 +60,13 @@ const FlipCoin = () => {
   const modalRef = useRef<HTMLDivElement | null>(null);
 
   const [isFlipping, setIsFlipping] = useState(false);
-  const [flipResult, setFlipResult] = useState<{
-    won: boolean | null;
-    result: string | null;
-  }>({ won: null, result: null });
+  const [flipResult, setFlipResult] = useState<FlipResult>({
+    won: null,
+    result: null,
+    choice: null,
+    outcome: null,
+    txHash: null,
+  });
 
   const decimals = 18;
 
@@ -291,9 +302,10 @@ const FlipCoin = () => {
     if (betStatus && requestId && betStatus[1] && gameOutcome) {
       setFlipResult({
         won: gameOutcome[1],
-        result: `You ${gameOutcome[1] ? "Won" : "Lost"}. Choice: ${
-          gameOutcome[2] ? "Tails" : "Heads"
-        }, Outcome: ${gameOutcome[3] ? "Tails" : "Heads"}`,
+        result: `You ${gameOutcome[1] ? "Won" : "Lost"}`,
+        choice: gameOutcome[2] ? "Tails" : "Heads",
+        outcome: gameOutcome[3] ? "Tails" : "Heads",
+        txHash: flipHash || null,
       });
       setState((prev) => ({
         ...prev,
@@ -302,7 +314,7 @@ const FlipCoin = () => {
       }));
       refetchBalance();
     }
-  }, [betStatus, gameOutcome, requestId, refetchBalance]);
+  }, [betStatus, gameOutcome, requestId, flipHash, refetchBalance]);
 
   const validateInput = (): string | null => {
     if (!isConnected || !address) return "Please connect your wallet";
@@ -380,7 +392,13 @@ const FlipCoin = () => {
   };
 
   const resetFlipState = () => {
-    setFlipResult({ won: null, result: null });
+    setFlipResult({
+      won: null,
+      result: null,
+      choice: null,
+      outcome: null,
+      txHash: null,
+    });
     setState((prev) => ({
       ...prev,
       success: null,
@@ -421,7 +439,14 @@ const FlipCoin = () => {
       platform === "warpcast"
         ? "flip-it-clanker.vercel.app/"
         : window.location.href;
-    return `I just ${result} ${state.tokenAmount} ${state.tokenSymbol} playing the flip-it game! Try your luck at ${url}`;
+    const basescanUrl = flipResult.txHash
+      ? `https://basescan.org/tx/${flipResult.txHash}`
+      : "";
+    return `I just ${result} ${state.tokenAmount} ${
+      state.tokenSymbol
+    } flipping ${flipResult.choice} (Result: ${flipResult.outcome})! ${
+      basescanUrl ? `(Tx: ${basescanUrl}) ` : ""
+    }Try your luck at ${url}`;
   };
 
   const [shareStatus, setShareStatus] = useState("");
@@ -558,12 +583,61 @@ const FlipCoin = () => {
         {flipResult.won !== null && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-              <h2 className="text-xl font-bold mb-2 text-center">
-                {flipResult.won
-                  ? "🎉 Congratulations!"
-                  : "😢 Better luck next time!"}
-              </h2>
-              <p className="text-center mb-4">{flipResult.result}</p>
+              {/* Result Card */}
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200 shadow-md mb-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold text-purple-800">
+                    {flipResult.won ? "🎉 Victory!" : "🎲 Try Again!"}
+                  </h2>
+                  <span
+                    className={`px-2 py-1 rounded-full text-sm font-medium ${
+                      flipResult.won
+                        ? "bg-green-200 text-green-800"
+                        : "bg-red-200 text-red-800"
+                    }`}
+                  >
+                    {flipResult.won ? "Won" : "Lost"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="text-center">
+                    <p className="text-sm text-purple-600">Your Choice</p>
+                    <p className="text-lg font-semibold text-purple-900">
+                      {flipResult.choice}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm text-purple-600">Outcome</p>
+                    <p className="text-lg font-semibold text-purple-900">
+                      {flipResult.outcome}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-purple-200/50 p-3 rounded-md">
+                  <p className="text-sm text-purple-700">
+                    Amount: {state.tokenAmount} {state.tokenSymbol}
+                  </p>
+                  {flipResult.txHash && (
+                    <p className="text-xs text-purple-600 mt-1 truncate">
+                      Tx:{" "}
+                      <a
+                        href={`https://basescan.org/tx/${flipResult.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-purple-800"
+                        title={flipResult.txHash}
+                      >
+                        {flipResult.txHash.slice(0, 6)}...
+                        {flipResult.txHash.slice(-4)}
+                      </a>
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Share Section */}
               <div className="border-t border-b border-gray-200 py-4 my-4">
                 <p className="text-center text-gray-700 mb-3 font-medium">
                   Share your result
@@ -574,6 +648,7 @@ const FlipCoin = () => {
                     className="p-2 rounded-full hover:bg-gray-200 transition-colors"
                     aria-label="Share on X"
                   >
+                    {/* X SVG */}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="24"
@@ -589,6 +664,7 @@ const FlipCoin = () => {
                     className="p-2 rounded-full hover:bg-gray-200 transition-colors"
                     aria-label="Share on Warpcast"
                   >
+                    {/* Warpcast SVG */}
                     <svg
                       width="24"
                       height="24"
@@ -613,9 +689,10 @@ const FlipCoin = () => {
                   </button>
                   <button
                     onClick={() => handleShare("copy")}
-                    className="bg-gray-800 text-white p-2 rounded-full hover:bg-gray-700 transition-colors"
+                    className="p-2 rounded-full hover:bg-gray-200 transition-colors"
                     aria-label="Copy to clipboard"
                   >
+                    {/* Copy SVG */}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="24"
@@ -624,8 +701,6 @@ const FlipCoin = () => {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                     >
                       <rect
                         x="9"
@@ -645,6 +720,7 @@ const FlipCoin = () => {
                   </p>
                 )}
               </div>
+
               <button
                 onClick={resetFlipState}
                 className="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-md transition-colors duration-200 font-medium"
