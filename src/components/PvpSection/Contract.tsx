@@ -824,7 +824,7 @@ export const ABI =[
 
 
 // src/contracts/FlipGameContract.ts
-export const ADDRESS = "0x408637279e47a5DAbBF8235Bb3a720741df59714";
+export const ADDRESS = "0x51A148d58C906413558B5c9374F90823fB8C5582";
 
 
 
@@ -841,7 +841,7 @@ export const SUPPORTED_TOKENS = [
 
 
 
-// Define the full ERC20 ABI with the required functions
+
 export const erc20ABI = [
   {
     "constant": true,

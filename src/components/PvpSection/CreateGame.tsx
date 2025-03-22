@@ -1,11 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { SUPPORTED_TOKENS, ADDRESS, ABI } from './Contract';
-import {
-  useWriteContract,
-  useAccount,
-  useReadContract
-} from 'wagmi';
-import { parseUnits, Address, formatUnits } from 'viem';
+import React, { useState, useEffect } from "react";
+import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
+import { useWriteContract, useAccount, useReadContract } from "wagmi";
+import { parseUnits, Address, formatUnits } from "viem";
 
 // Custom hook for creating a game
 export function useCreateGame() {
@@ -15,48 +11,61 @@ export function useCreateGame() {
   const [error, setError] = useState<Error | null>(null);
 
   const { writeContractAsync } = useWriteContract();
-  
 
   // Function to approve token spending before creating game
-  const approveToken = async (tokenAddress: Address, amount: bigint, balance: bigint) => {
+  const approveToken = async (
+    tokenAddress: Address,
+    amount: bigint,
+    balance: bigint
+  ) => {
     if (amount > balance) {
       const fall = formatUnits(amount - balance, 18);
       const shortfall = parseFloat(fall).toFixed(2);
-      const tokenSymbol = SUPPORTED_TOKENS.find(t => t.address === tokenAddress)?.symbol || 'tokens';
+      const tokenSymbol =
+        SUPPORTED_TOKENS.find((t) => t.address === tokenAddress)?.symbol ||
+        "tokens";
       const errorMsg = `Insufficient funds: You need to add ${shortfall} more ${tokenSymbol}`;
       return { success: false, error: new Error(errorMsg) };
     }
-  
+
     try {
       const data = await writeContractAsync({
         address: tokenAddress,
         abi: [
           {
-            name: 'approve',
-            type: 'function',
-            stateMutability: 'nonpayable',
+            name: "approve",
+            type: "function",
+            stateMutability: "nonpayable",
             inputs: [
-              { name: 'spender', type: 'address' },
-              { name: 'amount', type: 'uint256' }
+              { name: "spender", type: "address" },
+              { name: "amount", type: "uint256" },
             ],
-            outputs: [{ type: 'bool' }]
-          }
+            outputs: [{ type: "bool" }],
+          },
         ],
-        functionName: 'approve',
-        args: [ADDRESS, amount]
+        functionName: "approve",
+        args: [ADDRESS, amount],
       });
-  
-      console.log('Approval transaction data:', data);
+
+      console.log("Approval transaction data:", data);
       return { success: true, data };
     } catch (err) {
-      if (err instanceof Error && err.message.includes('User denied transaction signature')) {
-        return { success: false, error: new Error('Token approval was canceled by the user.') };
+      if (
+        err instanceof Error &&
+        err.message.includes("User denied transaction signature")
+      ) {
+        return {
+          success: false,
+          error: new Error("Token approval was canceled by the user."),
+        };
       }
-      console.error('Error approving token:', err);
-      return { success: false, error: err instanceof Error ? err : new Error('Error approving token') };
+      console.error("Error approving token:", err);
+      return {
+        success: false,
+        error: err instanceof Error ? err : new Error("Error approving token"),
+      };
     }
   };
-  
 
   // Main function to create a game
   const createGame = async ({
@@ -64,55 +73,57 @@ export function useCreateGame() {
     tokenSymbol,
     amount,
     betTimeout,
-    tokenBalance // Pass the user's token balance to check against
+    tokenBalance, // Pass the user's token balance to check against
   }: {
-    face: boolean,
-    tokenSymbol: string,
-    amount: string,
-    betTimeout: number,
-    tokenBalance: bigint
+    face: boolean;
+    tokenSymbol: string;
+    amount: string;
+    betTimeout: number;
+    tokenBalance: bigint;
   }) => {
     setIsPending(true);
     setError(null);
 
     try {
       // Find token from supported tokens
-      const token = SUPPORTED_TOKENS.find(t => t.symbol === tokenSymbol);
+      const token = SUPPORTED_TOKENS.find((t) => t.symbol === tokenSymbol);
       if (!token) {
         throw new Error(`Token ${tokenSymbol} not supported`);
       }
 
-
       // Parse amount with correct decimals (assuming 18 decimals for all tokens)
       const parsedAmount = parseUnits(amount, 18);
-   
 
       // First approve the contract to spend tokens, passing the balance for comparison
-      const approvalResult = await approveToken(token.address as Address, parsedAmount, tokenBalance);
+      const approvalResult = await approveToken(
+        token.address as Address,
+        parsedAmount,
+        tokenBalance
+      );
       if (!approvalResult.success) {
         throw approvalResult.error;
       }
-      
-     
+
       // Wait for approval transaction to complete
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Simple timeout, consider using actual transaction confirmation
+      await new Promise((resolve) => setTimeout(resolve, 5000)); // Simple timeout, consider using actual transaction confirmation
 
       // Create the game
       const tx = await writeContractAsync({
         address: ADDRESS as Address,
         abi: ABI,
-        functionName: 'createGame',
-        args: [face, token.address, parsedAmount, BigInt(betTimeout)]
+        functionName: "createGame",
+        args: [face, token.address, parsedAmount, BigInt(betTimeout)],
       });
 
-      
       setIsPending(false);
       setIsSuccess(true);
 
       return tx;
     } catch (err) {
-      console.error('Error creating game:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      console.error("Error creating game:", err);
+      setError(
+        err instanceof Error ? err : new Error("Unknown error occurred")
+      );
       setIsPending(false);
       setIsSuccess(false);
       throw err;
@@ -125,7 +136,7 @@ export function useCreateGame() {
     isPending,
     isSuccess,
     error,
-    setError
+    setError,
   };
 }
 
@@ -133,8 +144,10 @@ export function useCreateGame() {
 const CreateGameForm: React.FC = () => {
   const { address } = useAccount(); // Destructure address from the useAccount hook
   const [face, setFace] = useState<boolean>(true); // true for heads, false for tails
-  const [tokenSymbol, setTokenSymbol] = useState<string>(SUPPORTED_TOKENS[0]?.symbol || '');
-  const [amount, setAmount] = useState<string>('0.1');
+  const [tokenSymbol, setTokenSymbol] = useState<string>(
+    SUPPORTED_TOKENS[0]?.symbol || ""
+  );
+  const [amount, setAmount] = useState<string>("0.1");
   const [betTimeout, setBetTimeout] = useState<number>(3600); // 1 hour in seconds
   const [tokenBalance, setTokenBalance] = useState<bigint>(BigInt(0)); // Store token balance
   const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(false);
@@ -143,26 +156,29 @@ const CreateGameForm: React.FC = () => {
   const { createGame, isPending, isSuccess, error, setError } = useCreateGame();
 
   // Get the current selected token's address
-  const selectedToken = SUPPORTED_TOKENS.find(t => t.symbol === tokenSymbol);
+  const selectedToken = SUPPORTED_TOKENS.find((t) => t.symbol === tokenSymbol);
   const tokenAddress = selectedToken?.address as Address;
 
   // Fetch token balance for the selected token
-  const { data: balanceData, refetch, isLoading } = useReadContract({
+  const {
+    data: balanceData,
+    refetch,
+    isLoading,
+  } = useReadContract({
     address: tokenAddress,
     abi: [
       {
-        name: 'balanceOf',
-        type: 'function',
-        stateMutability: 'view',
-        inputs: [{ name: 'account', type: 'address' }],
-        outputs: [{ name: 'balance', type: 'uint256' }]
-      }
+        name: "balanceOf",
+        type: "function",
+        stateMutability: "view",
+        inputs: [{ name: "account", type: "address" }],
+        outputs: [{ name: "balance", type: "uint256" }],
+      },
     ],
-    functionName: 'balanceOf',
+    functionName: "balanceOf",
     args: [address as Address],
-  
   });
-  
+
   // Refetch balance when address or tokenAddress changes
   useEffect(() => {
     if (address && tokenAddress) {
@@ -193,23 +209,29 @@ const CreateGameForm: React.FC = () => {
   // Validate bet amount
   const validateAmount = (value: string): boolean => {
     // Check if amount is a valid number greater than 0
-    if (parseFloat(value) <= 0 || value.trim() === '') {
-      setErrorMessage('Please enter a valid bet amount greater than 0');
+    if (parseFloat(value) <= 0 || value.trim() === "") {
+      setErrorMessage("Please enter a valid bet amount greater than 0");
       return false;
     }
 
     // Validate that the amount has at most 2 decimal places
     const decimalCheck = /^(\d+(\.\d{1,2})?)$/;
     if (!decimalCheck.test(value)) {
-      setErrorMessage('Please enter a bet amount with at most 2 decimal places');
+      setErrorMessage(
+        "Please enter a bet amount with at most 2 decimal places"
+      );
       return false;
     }
 
     // Check if amount exceeds balance
     const parsedAmount = parseUnits(value, 18);
     if (parsedAmount > tokenBalance) {
-      const shortfall = parseFloat(formatUnits(parsedAmount - tokenBalance, 18)).toFixed(2);
-      setErrorMessage(`Insufficient balance: You need ${shortfall} more ${tokenSymbol}`);
+      const shortfall = parseFloat(
+        formatUnits(parsedAmount - tokenBalance, 18)
+      ).toFixed(2);
+      setErrorMessage(
+        `Insufficient balance: You need ${shortfall} more ${tokenSymbol}`
+      );
       return false;
     }
 
@@ -220,26 +242,29 @@ const CreateGameForm: React.FC = () => {
   const handleCreateGame = async () => {
     setErrorMessage(null);
     setError(null);
-  
+
     if (!validateAmount(amount)) return;
-  
+
     try {
       await createGame({
         face,
         tokenSymbol,
         amount,
         betTimeout,
-        tokenBalance
+        tokenBalance,
       });
     } catch (err) {
-      if (err instanceof Error && err.message.includes('User denied transaction signature')) {
-        setErrorMessage('Transaction was canceled by the user.');
+      if (
+        err instanceof Error &&
+        err.message.includes("User denied transaction signature")
+      ) {
+        setErrorMessage("Transaction was canceled by the user.");
       } else {
-        setErrorMessage('Error creating game. Please try again.');
+        setErrorMessage("Error creating game. Please try again.");
       }
     }
   };
-  
+
   // Auto-hide error messages after 5 seconds
   useEffect(() => {
     if (errorMessage || error) {
@@ -272,14 +297,18 @@ const CreateGameForm: React.FC = () => {
         <div className="flex space-x-4 mb-6">
           <button
             type="button"
-            className={`px-6 py-3 rounded-lg font-medium ${face ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            className={`px-6 py-3 rounded-lg font-medium ${
+              face ? "bg-blue-500 text-white" : "bg-gray-200"
+            }`}
             onClick={() => setFace(true)}
           >
             Heads
           </button>
           <button
             type="button"
-            className={`px-6 py-3 rounded-lg font-medium ${!face ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            className={`px-6 py-3 rounded-lg font-medium ${
+              !face ? "bg-blue-500 text-white" : "bg-gray-200"
+            }`}
             onClick={() => setFace(false)}
           >
             Tails
@@ -338,7 +367,7 @@ const CreateGameForm: React.FC = () => {
         disabled={isPending || isLoadingBalance}
         className="w-full p-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
       >
-        {isPending ? 'Creating Game...' : 'Create Game'}
+        {isPending ? "Creating Game..." : "Create Game"}
       </button>
 
       {/* Combined error message display */}
