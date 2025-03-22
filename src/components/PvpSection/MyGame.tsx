@@ -40,7 +40,7 @@ const MyGame: React.FC = () => {
   const [selectedToken] = useState<string>(SUPPORTED_TOKENS[0]?.address || "");
   const [pendingBets, setPendingBets] = useState<PendingBet[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [, setSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const gamesPerPage = 5;
@@ -55,31 +55,33 @@ const MyGame: React.FC = () => {
     hash: writeData,
   });
 
-  const { data: pendingBetsData, refetch: refetchPendingBets } = useReadContract({
-    address: ADDRESS,
-    abi: ABI,
-    functionName: "getPendingBets",
-    enabled: isConnected,
-  });
+  const { data: pendingBetsData, refetch: refetchPendingBets } = isConnected
+    ? useReadContract({
+        address: ADDRESS,
+        abi: ABI,
+        functionName: "getPendingBets",
+      })
+    : { data: null, refetch: () => {} };
 
-  const { data: allowanceData, refetch: refetchAllowance } = useReadContract({
-    address: selectedToken,
-    abi: [
-      {
-        inputs: [
-          { name: "owner", type: "address" },
-          { name: "spender", type: "address" }
+  const { data: allowanceData, refetch: refetchAllowance } = isConnected && address && selectedToken
+    ? useReadContract({
+        address: selectedToken as `0x${string}`,
+        abi: [
+          {
+            inputs: [
+              { name: "owner", type: "address" },
+              { name: "spender", type: "address" }
+            ],
+            name: "allowance",
+            outputs: [{ name: "", type: "uint256" }],
+            stateMutability: "view",
+            type: "function"
+          }
         ],
-        name: "allowance",
-        outputs: [{ name: "", type: "uint256" }],
-        stateMutability: "view",
-        type: "function"
-      }
-    ],
-    functionName: "allowance",
-    args: [address || "0x0", ADDRESS],
-    enabled: isConnected && !!address && !!selectedToken,
-  });
+        functionName: "allowance",
+        args: [address, ADDRESS],
+      })
+    : { data: null, refetch: () => {} };
 
   useWatchContractEvent({
     address: ADDRESS,
@@ -121,10 +123,16 @@ const MyGame: React.FC = () => {
     if (isConnected) {
       setLoading(true);
       console.log("Refetching pending bets...");
-      refetchPendingBets().finally(() => {
+      const refetchResult = refetchPendingBets();
+      if (refetchResult instanceof Promise) {
+        refetchResult.finally(() => {
+          setLoading(false);
+          console.log("Pending bets fetched.");
+        });
+      } else {
         setLoading(false);
         console.log("Pending bets fetched.");
-      });
+      }
     }
   }, [isConnected, address]);
 
@@ -173,7 +181,7 @@ const MyGame: React.FC = () => {
       const bet = pendingBets.find(b => b.betId === betId);
       if (!bet) throw new Error("Bet not found");
 
-      if (allowanceData < bet.amount) {
+      if (allowanceData !== null && allowanceData !== undefined && allowanceData < bet.amount) {
         console.log("Not enough allowance, approving tokens...");
         await approveTokens(bet.amount);
       }
@@ -219,7 +227,7 @@ const MyGame: React.FC = () => {
     setLoading(true);
     console.log("Approving tokens for amount:", amount);
     writeContract({
-      address: selectedToken,
+      address: selectedToken as `0x${string}`,
       abi: [
         {
           inputs: [

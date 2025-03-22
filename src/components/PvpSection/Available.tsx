@@ -6,7 +6,7 @@ import {
   useAccount,
   useWatchContractEvent,
 } from "wagmi";
-import { formatEther, Address, parseEther } from "viem";
+import { formatEther, Address } from "viem";
 import { CircleDollarSign, XCircle, GamepadIcon } from "lucide-react";
 import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
 
@@ -37,13 +37,13 @@ const LoadingSpinner: React.FC = () => (
 
 const GameList: React.FC = () => {
   const { isConnected, address } = useAccount();
-  const [selectedToken] = useState<Address>(SUPPORTED_TOKENS[0]?.address || "0x0");
+  const [selectedToken] = useState<Address>(SUPPORTED_TOKENS[0]?.address as `0x${string}` || "0x0000000000000000000000000000000000000000");
   const [pendingBets, setPendingBets] = useState<PendingBet[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [tokenBalance, setTokenBalance] = useState<string>("0");
+  const [, setTokenBalance] = useState<string>("0");
   const [isApprovalPending, setIsApprovalPending] = useState(false);
   const [approvalTxHash, setApprovalTxHash] = useState<string | null>(null);
   const gamesPerPage = 5;
@@ -54,10 +54,11 @@ const GameList: React.FC = () => {
   });
 
   const { isSuccess: isApprovalSuccess, isError: isApprovalError } = 
-    useWaitForTransactionReceipt({
-      hash: approvalTxHash as `0x${string}`,
-      enabled: !!approvalTxHash,
-    });
+    approvalTxHash
+      ? useWaitForTransactionReceipt({
+          hash: approvalTxHash as `0x${string}`,
+        })
+      : { isSuccess: false, isError: false };
 
   const { data: pendingBetsData, refetch: refetchPendingBets } = useReadContract({
     address: ADDRESS,
@@ -69,7 +70,6 @@ const GameList: React.FC = () => {
   const {
     data: balanceData,
     refetch: refetchBalance,
-    isFetching: isBalanceFetching,
   } = useReadContract({
     address: selectedToken,
     abi: [
@@ -200,7 +200,7 @@ const GameList: React.FC = () => {
     setIsApprovalPending(true);
     try {
       const approvalAmount = amount * BigInt(1); // Approve 10x the needed amount
-      const hash = await writeContract({
+      const result = await writeContract({
         address: tokenAddress as `0x${string}`,
         abi: [
           {
@@ -217,8 +217,13 @@ const GameList: React.FC = () => {
         functionName: "approve",
         args: [ADDRESS, approvalAmount],
       });
-      setApprovalTxHash(hash);
-      console.log("Approval TX hash:", hash);
+
+      if (result !== undefined && typeof result === "string") {
+        setApprovalTxHash(result);
+      } else {
+        throw new Error("Failed to retrieve transaction hash");
+      }
+      console.log("Approval TX hash:", result);
       return true;
     } catch (error) {
       setIsApprovalPending(false);
