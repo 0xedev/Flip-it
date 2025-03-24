@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
 import { useWriteContract, useAccount, useReadContract } from "wagmi";
 import { parseUnits, Address, formatUnits } from "viem";
 
-// Custom hook for creating a game
+const TOKEN_ICONS: { [key: string]: string } = {
+  STABLEAI: "https://flip-it-clanker.vercel.app/icon.svg",
+  // Add more token icons as needed
+};
+
 export function useCreateGame() {
   const [gameId] = useState<number | null>(null);
   const [isPending, setIsPending] = useState(false);
@@ -12,7 +16,6 @@ export function useCreateGame() {
 
   const { writeContractAsync } = useWriteContract();
 
-  // Function to approve token spending before creating game
   const approveToken = async (
     tokenAddress: Address,
     amount: bigint,
@@ -24,8 +27,12 @@ export function useCreateGame() {
       const tokenSymbol =
         SUPPORTED_TOKENS.find((t) => t.address === tokenAddress)?.symbol ||
         "tokens";
-      const errorMsg = `Insufficient funds: You need to add ${shortfall} more ${tokenSymbol}`;
-      return { success: false, error: new Error(errorMsg) };
+      return {
+        success: false,
+        error: new Error(
+          `Insufficient funds: You need ${shortfall} more ${tokenSymbol}`
+        ),
+      };
     }
 
     try {
@@ -46,35 +53,21 @@ export function useCreateGame() {
         functionName: "approve",
         args: [ADDRESS, amount],
       });
-
-      console.log("Approval transaction data:", data);
       return { success: true, data };
     } catch (err) {
-      if (
-        err instanceof Error &&
-        err.message.includes("User denied transaction signature")
-      ) {
-        return {
-          success: false,
-          error: new Error("Token approval was canceled by the user."),
-        };
-      }
-      console.error("Error approving token:", err);
       return {
         success: false,
         error: err instanceof Error ? err : new Error("Error approving token"),
       };
     }
   };
-  
 
-  // Main function to create a game
   const createGame = async ({
     face,
     tokenSymbol,
     amount,
     betTimeout,
-    tokenBalance, // Pass the user's token balance to check against
+    tokenBalance,
   }: {
     face: boolean;
     tokenSymbol: string;
@@ -86,29 +79,19 @@ export function useCreateGame() {
     setError(null);
 
     try {
-      // Find token from supported tokens
       const token = SUPPORTED_TOKENS.find((t) => t.symbol === tokenSymbol);
-      if (!token) {
-        throw new Error(`Token ${tokenSymbol} not supported`);
-      }
+      if (!token) throw new Error(`Token ${tokenSymbol} not supported`);
 
-      // Parse amount with correct decimals (assuming 18 decimals for all tokens)
       const parsedAmount = parseUnits(amount, 18);
-
-      // First approve the contract to spend tokens, passing the balance for comparison
       const approvalResult = await approveToken(
         token.address as Address,
         parsedAmount,
         tokenBalance
       );
-      if (!approvalResult.success) {
-        throw approvalResult.error;
-      }
+      if (!approvalResult.success) throw approvalResult.error;
 
-      // Wait for approval transaction to complete
-      await new Promise((resolve) => setTimeout(resolve, 5000)); // Simple timeout, consider using actual transaction confirmation
+      await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      // Create the game
       const tx = await writeContractAsync({
         address: ADDRESS as Address,
         abi: ABI,
@@ -118,10 +101,8 @@ export function useCreateGame() {
 
       setIsPending(false);
       setIsSuccess(true);
-
       return tx;
     } catch (err) {
-      console.error("Error creating game:", err);
       setError(
         err instanceof Error ? err : new Error("Unknown error occurred")
       );
@@ -131,36 +112,52 @@ export function useCreateGame() {
     }
   };
 
-  return {
-    createGame,
-    gameId,
-    isPending,
-    isSuccess,
-    error,
-    setError,
-  };
+  return { createGame, gameId, isPending, isSuccess, error, setError };
 }
 
-// Example component using the hook
 const CreateGameForm: React.FC = () => {
-  const { address } = useAccount(); // Destructure address from the useAccount hook
-  const [face, setFace] = useState<boolean>(true); // true for heads, false for tails
+  const { address } = useAccount();
+  const [face, setFace] = useState<boolean>(true);
   const [tokenSymbol, setTokenSymbol] = useState<string>(
     SUPPORTED_TOKENS[0]?.symbol || ""
   );
   const [amount, setAmount] = useState<string>("0.1");
-  const [betTimeout, setBetTimeout] = useState<number>(3600); // 1 hour in seconds
-  const [tokenBalance, setTokenBalance] = useState<bigint>(BigInt(0)); // Store token balance
+  const [betTimeout, setBetTimeout] = useState<number>(3600);
+  const [tokenBalance, setTokenBalance] = useState<bigint>(BigInt(0));
   const [isLoadingBalance, setIsLoadingBalance] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null); // For validation errors
+  const [currentStep, setCurrentStep] = useState<
+    "prepare" | "approve" | "create"
+  >("prepare");
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [showTour, setShowTour] = useState<boolean>(false);
 
-  const { createGame, isPending, isSuccess, error, setError } = useCreateGame();
+  const sliderRef = useRef<HTMLInputElement>(null);
+  const coinRef = useRef<HTMLDivElement>(null);
 
-  // Get the current selected token's address
+  const { createGame, isPending } = useCreateGame();
+
   const selectedToken = SUPPORTED_TOKENS.find((t) => t.symbol === tokenSymbol);
   const tokenAddress = selectedToken?.address as Address;
 
-  // Fetch token balance for the selected token
+  const timeoutOptions = [
+    { label: "10 min", value: 600 },
+    { label: "30 min", value: 1800 },
+    { label: "1 hr", value: 3600 },
+    { label: "6 hrs", value: 21600 },
+    { label: "1 day", value: 86400 },
+  ];
+
+  const betPresets = [
+    { label: "Min", value: "1", percent: 1 },
+    { label: "Low", value: "10", percent: 10 },
+    { label: "Med", value: "50", percent: 50 },
+    { label: "High", value: "80", percent: 80 },
+  ];
+
   const {
     data: balanceData,
     refetch,
@@ -180,22 +177,10 @@ const CreateGameForm: React.FC = () => {
     args: [address as Address],
   });
 
-  // Refetch balance when address or tokenAddress changes
   useEffect(() => {
-    if (address && tokenAddress) {
-      refetch();
-    }
+    if (address && tokenAddress) refetch();
   }, [address, tokenAddress, refetch]);
 
-  // Handle token change
-  const handleTokenChange = async (newTokenSymbol: string) => {
-    setIsLoadingBalance(true);
-    setTokenSymbol(newTokenSymbol);
-    // Clear any existing errors when changing tokens
-    setErrorMessage(null);
-  };
-
-  // Update balance when balanceData changes or when loading completes
   useEffect(() => {
     if (balanceData !== undefined) {
       setTokenBalance(BigInt(balanceData.toString()));
@@ -203,186 +188,493 @@ const CreateGameForm: React.FC = () => {
     }
   }, [balanceData]);
 
-  // Format the balance with proper decimals
-  const formattedBalance = formatUnits(tokenBalance, 18); // Adjust decimals according to token
-  const roundedBalance = parseFloat(formattedBalance).toFixed(2);
+  const formattedBalance = formatUnits(tokenBalance, 18);
+  const maxBet = parseFloat(formattedBalance) || 0;
+  const betPercentage = maxBet > 0 ? (parseFloat(amount) / maxBet) * 100 : 0;
 
-  // Validate bet amount
+  const getBetColor = () =>
+    betPercentage < 25
+      ? "green"
+      : betPercentage < 50
+      ? "yellow"
+      : betPercentage < 75
+      ? "orange"
+      : "red";
+
   const validateAmount = (value: string): boolean => {
-    // Check if amount is a valid number greater than 0
-    if (parseFloat(value) <= 0 || value.trim() === "") {
-      setErrorMessage("Please enter a valid bet amount greater than 0");
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue <= 0 || !value.trim()) {
+      setToast({ message: "Amount must be greater than 0", type: "error" });
       return false;
     }
-
-    // Validate that the amount has at most 2 decimal places
-    const decimalCheck = /^(\d+(\.\d{1,2})?)$/;
-    if (!decimalCheck.test(value)) {
-      setErrorMessage(
-        "Please enter a bet amount with at most 2 decimal places"
-      );
-      return false;
-    }
-
-    // Check if amount exceeds balance
     const parsedAmount = parseUnits(value, 18);
     if (parsedAmount > tokenBalance) {
       const shortfall = parseFloat(
         formatUnits(parsedAmount - tokenBalance, 18)
       ).toFixed(2);
-      setErrorMessage(
-        `Insufficient balance: You need ${shortfall} more ${tokenSymbol}`
-      );
+      setToast({
+        message: `Need ${shortfall} more ${tokenSymbol}`,
+        type: "error",
+      });
       return false;
     }
-
     return true;
   };
 
-  // Handle button click for game creation
-  const handleCreateGame = async () => {
-    setErrorMessage(null);
-    setError(null);
+  const handleCreateGame = async (quickBet = false) => {
+    setCurrentStep("approve");
+    setToast({ message: "Approving tokens...", type: "info" });
 
-    if (!validateAmount(amount)) return;
+    const betAmount = quickBet ? "1000" : amount;
+    if (!validateAmount(betAmount)) return;
 
     try {
       await createGame({
         face,
         tokenSymbol,
-        amount,
+        amount: betAmount,
         betTimeout,
         tokenBalance,
       });
-    } catch (err) {
-      if (
-        err instanceof Error &&
-        err.message.includes("User denied transaction signature")
-      ) {
-        setErrorMessage("Transaction was canceled by the user.");
-      } else {
-        setErrorMessage("Error creating game. Please try again.");
+      setCurrentStep("create");
+      setToast({ message: "Game created successfully!", type: "success" });
+      if (coinRef.current) {
+        coinRef.current.classList.add("animate-flip");
+        setTimeout(
+          () => coinRef.current?.classList.remove("animate-flip"),
+          1000
+        );
       }
+    } catch (err) {
+      setCurrentStep("prepare");
+      setToast({
+        message: err instanceof Error ? err.message : "Error creating game",
+        type: "error",
+      });
     }
   };
 
-  // Auto-hide error messages after 5 seconds
-  useEffect(() => {
-    if (errorMessage || error) {
-      const timer = setTimeout(() => {
-        setErrorMessage(null);
-        setError(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorMessage, error, setError]);
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const percentage = Number(e.target.value);
+    const newAmount = (maxBet * (percentage / 100)).toFixed(2);
+    setAmount(newAmount);
+  };
+
+  const handleSwipe = (e: React.TouchEvent<HTMLInputElement>) => {
+    const percentage = Number(e.currentTarget.value);
+    const newAmount = (maxBet * (percentage / 100)).toFixed(2);
+    setAmount(newAmount);
+  };
+
+  const truncatedAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : "";
 
   return (
-    <div className="space-y-4 text-black">
-      <div>
-        <label className="block mb-2 font-medium">Choose Side:</label>
-        <p className="text-sm text-gray-600 mb-2">{address}</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-6 px-4 sm:px-6">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6 relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2220%22 height=%2220%22 viewBox=%220 0 20 20%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M10 10h.01%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E')] opacity-10 pointer-events-none"></div>
 
-        {/* Display token balance and symbol with loading indicator */}
-        <div className="text-xl font-semibold mb-4">
+        {/* Progress Stepper */}
+        <div className="flex justify-between mb-4 sm:mb-6 relative z-10">
+          {["Prepare", "Approve", "Create"].map((step, idx) => (
+            <div key={step} className="flex flex-col items-center">
+              <div
+                className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  currentStep === step.toLowerCase()
+                    ? "bg-blue-600 text-white"
+                    : idx <
+                      ["prepare", "approve", "create"].indexOf(currentStep)
+                    ? "bg-green-500 text-white"
+                    : "bg-gray-300 text-gray-700"
+                }`}
+              >
+                {idx + 1}
+              </div>
+              <span className="text-xs mt-1 hidden sm:block">{step}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+            Create Game
+          </h2>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-700 bg-gray-100 px-2 py-1 rounded-full">
+              {truncatedAddress}
+            </span>
+            <button
+              onClick={() => setShowTour(true)}
+              className="text-blue-600 hover:text-blue-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 rounded"
+              aria-label="Show first time tour"
+            >
+              First time?
+            </button>
+          </div>
+        </div>
+
+        {/* Balance Display */}
+        <div className="text-center mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg shadow-inner">
           {isLoadingBalance || isLoading ? (
-            <span className="text-gray-400">Loading balance...</span>
+            <span className="text-gray-500 animate-pulse">Loading...</span>
           ) : (
             <>
-              <span>{roundedBalance} </span>
-              <span>{tokenSymbol}</span>
+              <span className="text-xl sm:text-2xl font-semibold text-gray-800">
+                {parseFloat(formattedBalance).toFixed(2)}
+              </span>
+              <span className="ml-2 text-gray-600 text-sm sm:text-base">
+                {tokenSymbol}
+              </span>
             </>
           )}
         </div>
 
-        <div className="flex space-x-4 mb-6">
+        {/* Heads/Tails */}
+        <div className="mb-4 sm:mb-6">
+          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
+            Choose Side
+            <span
+              className="text-xs text-gray-500 cursor-help"
+              title="Pick Heads or Tails to bet on"
+            >
+              ?
+            </span>
+          </label>
+          <div ref={coinRef} className="grid grid-cols-2 gap-2 sm:gap-4">
+            <button
+              className={`p-3 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[80px] sm:min-h-[100px] ${
+                face
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 hover:bg-gray-200"
+              }`}
+              onClick={() => setFace(true)}
+              aria-label="Bet on Heads"
+              aria-pressed={face}
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-800 mb-2">
+                H
+              </div>
+              <span className="text-sm">Heads</span>
+            </button>
+            <button
+              className={`p-3 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[80px] sm:min-h-[100px] ${
+                !face
+                  ? "bg-blue-600 text-white shadow-md"
+                  : "bg-gray-100 hover:bg-gray-200"
+              }`}
+              onClick={() => setFace(false)}
+              aria-label="Bet on Tails"
+              aria-pressed={!face}
+            >
+              <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-800 mb-2">
+                T
+              </div>
+              <span className="text-sm">Tails</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Token Selection */}
+        <div className="mb-4 sm:mb-6">
+          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
+            Token
+            <span
+              className="text-xs text-gray-500 cursor-help"
+              title="Select the token to bet with"
+            >
+              ?
+            </span>
+          </label>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {SUPPORTED_TOKENS.map((token) => (
+              <button
+                key={token.symbol}
+                className={`p-2 sm:p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[60px] sm:min-h-[80px] ${
+                  tokenSymbol === token.symbol
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:bg-gray-50"
+                }`}
+                onClick={() => setTokenSymbol(token.symbol)}
+                disabled={isPending}
+                aria-label={`Select ${token.symbol}`}
+              >
+                <img
+                  src={
+                    TOKEN_ICONS[token.symbol] ||
+                    "https://flip-it-clanker.vercel.app/icon.svg"
+                  }
+                  alt={`${token.symbol} icon`}
+                  className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1"
+                />
+                <span className="text-xs sm:text-sm">{token.symbol}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Bet Amount */}
+        <div className="mb-4 sm:mb-6">
+          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
+            Bet Amount
+            <span
+              className="text-xs text-gray-500 cursor-help"
+              title="Amount to bet (max is your balance)"
+            >
+              ?
+            </span>
+          </label>
+          <div className="grid grid-cols-4 gap-2 mb-2 sm:mb-3">
+            {betPresets.map((preset) => (
+              <button
+                key={preset.label}
+                className={`p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                  parseFloat(amount) === (maxBet * preset.percent) / 100
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-100 hover:bg-gray-200"
+                }`}
+                onClick={() =>
+                  setAmount(((maxBet * preset.percent) / 100).toFixed(2))
+                }
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="flex-1 p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base"
+              step="0.01"
+              min="0"
+              max={maxBet}
+              disabled={isPending}
+              aria-label="Bet amount"
+            />
+            <span className="p-2 bg-gray-100 rounded-r-lg text-gray-700 text-sm sm:text-base">
+              {tokenSymbol}
+            </span>
+          </div>
+          <input
+            ref={sliderRef}
+            type="range"
+            min="0"
+            max={maxBet}
+            value={parseFloat(amount)}
+            onChange={handleSliderChange}
+            onTouchMove={handleSwipe}
+            className={`w-full accent-${getBetColor()}-500`}
+            step="0.01"
+            disabled={isPending || maxBet === 0}
+            aria-label="Bet amount slider"
+          />
+          <div className="flex justify-between text-xs text-gray-600 mt-1">
+            <span>0</span>
+            <span className={`text-${getBetColor()}-600`}>
+              {betPercentage.toFixed(0)}%
+            </span>
+            <span>{maxBet.toFixed(2)}</span>
+          </div>
+        </div>
+
+        {/* Timeout */}
+        <div className="mb-4 sm:mb-6">
           <button
-            type="button"
-            className={`px-6 py-3 rounded-lg font-medium ${
-              face ? "bg-blue-500 text-white" : "bg-gray-200"
-            }`}
-            onClick={() => setFace(true)}
+            className="flex justify-between w-full text-sm font-medium text-gray-800 mb-2 focus:outline-none"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            aria-expanded={showAdvanced}
           >
-            Heads
+            Timeout
+            <span
+              className="text-xs text-gray-500 cursor-help"
+              title="Time before the game expires if not accepted"
+            >
+              ?
+            </span>
+          </button>
+          {showAdvanced && (
+            <div className="space-y-2 animate-fade-in">
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {timeoutOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    className={`p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                      betTimeout === option.value
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                    onClick={() => setBetTimeout(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                value={betTimeout}
+                onChange={(e) => setBetTimeout(parseInt(e.target.value))}
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base"
+                min="1"
+                disabled={isPending}
+                aria-label="Timeout in seconds"
+              />
+              <div className="text-xs text-gray-600">
+                Seconds until expiration
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Buttons */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-4">
+          <button
+            onClick={() => handleCreateGame(true)}
+            disabled={isPending || isLoadingBalance}
+            className={`p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-green-300 text-sm sm:text-base ${
+              isPending
+                ? "bg-gray-400"
+                : "bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5"
+            }`}
+            aria-label="Quick Bet with 0.1 tokens"
+            title="Instantly bet 0.1 tokens"
+          >
+            {isPending && currentStep === "approve" ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="white"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="white"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Approving...
+              </span>
+            ) : (
+              "Quick Bet"
+            )}
           </button>
           <button
-            type="button"
-            className={`px-6 py-3 rounded-lg font-medium ${
-              !face ? "bg-blue-500 text-white" : "bg-gray-200"
+            onClick={() => handleCreateGame()}
+            disabled={isPending || isLoadingBalance}
+            className={`p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base ${
+              isPending
+                ? "bg-gray-400"
+                : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5"
             }`}
-            onClick={() => setFace(false)}
+            aria-label="Create Game with custom amount"
           >
-            Tails
+            {isPending ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="white"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="white"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                {currentStep === "approve" ? "Approving..." : "Creating..."}
+              </span>
+            ) : (
+              "Create Game"
+            )}
           </button>
         </div>
+
+        {/* Toast */}
+        {toast && (
+          <div
+            className={`fixed bottom-4 left-4 right-4 sm:max-w-sm sm:mx-auto p-4 rounded-lg shadow-lg text-white animate-fade-in text-sm ${
+              toast.type === "success"
+                ? "bg-green-600"
+                : toast.type === "error"
+                ? "bg-red-600"
+                : "bg-blue-600"
+            }`}
+            role="alert"
+          >
+            {toast.message}
+            <button
+              onClick={() => setToast(null)}
+              className="ml-2 text-white opacity-75 hover:opacity-100"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Guided Tour Modal */}
+        {showTour && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-4 sm:p-6 rounded-lg max-w-md w-11/12">
+              <h3 className="text-lg font-bold mb-4">Welcome to Coin Flip!</h3>
+              <p className="text-gray-700 mb-4 text-sm sm:text-base">
+                1. Choose Heads or Tails
+                <br />
+                2. Select your token and amount
+                <br />
+                3. Set a timeout
+                <br />
+                4. Create your game!
+              </p>
+              <button
+                onClick={() => setShowTour(false)}
+                className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm sm:text-base"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div>
-        <label className="block mb-2 font-medium">Token:</label>
-        <select
-          value={tokenSymbol}
-          onChange={(e) => handleTokenChange(e.target.value)}
-          className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
-          disabled={isPending}
-        >
-          {SUPPORTED_TOKENS.map((token) => (
-            <option key={token.address} value={token.symbol}>
-              {token.symbol}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <label className="block mb-2 font-medium">Amount:</label>
-        <input
-          type="text"
-          value={amount}
-          onChange={(e) => {
-            setAmount(e.target.value);
-            // Clear error when user types
-            if (errorMessage) setErrorMessage(null);
-          }}
-          className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
-          placeholder="0.1"
-          disabled={isPending}
-        />
-      </div>
-
-      <div>
-        <label className="block mb-2 font-medium">Timeout (seconds):</label>
-        <input
-          type="number"
-          value={betTimeout}
-          onChange={(e) => setBetTimeout(parseInt(e.target.value))}
-          className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
-          placeholder="3600"
-          min="1"
-          disabled={isPending}
-        />
-      </div>
-
-      <button
-        type="button"
-        onClick={handleCreateGame}
-        disabled={isPending || isLoadingBalance}
-        className="w-full p-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 disabled:bg-blue-300 transition-colors"
-      >
-        {isPending ? "Creating Game..." : "Create Game"}
-      </button>
-
-      {/* Combined error message display */}
-      {(errorMessage || error) && (
-        <div className="p-3 bg-red-100 text-red-800 rounded-lg animate-fade-in">
-          {errorMessage || error?.message}
-        </div>
-      )}
-
-      {isSuccess && (
-        <div className="p-3 bg-green-100 text-green-800 rounded-lg animate-fade-in">
-          Game created successfully!
-        </div>
-      )}
+      {/* CSS for animations */}
+      <style>{`
+        .animate-flip {
+          animation: flip 1s ease-in-out;
+        }
+        @keyframes flip {
+          0% {
+            transform: rotateY(0deg);
+          }
+          50% {
+            transform: rotateY(180deg);
+          }
+          100% {
+            transform: rotateY(360deg);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 };
