@@ -56,7 +56,7 @@ const FlipCoin = () => {
     isBalanceLoading: false,
   });
   const [selectedSong, setSelectedSong] = useState<string | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [, setIsPlaying] = useState(false);
   const [playFlip] = useSound(flipSfx);
   const [playClick] = useSound(clickSfx);
   const [requestId, setRequestId] = useState<string | null>(null);
