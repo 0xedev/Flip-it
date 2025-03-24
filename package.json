@@ -24,6 +24,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.1.5",
+    "use-sound": "^5.0.0",
     "viem": "^2.22.19",
     "wagmi": "^2.14.9",
     "web3modal": "^1.9.12"

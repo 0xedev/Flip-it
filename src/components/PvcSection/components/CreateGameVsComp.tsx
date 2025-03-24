@@ -9,6 +9,14 @@ import {
   useWatchContractEvent,
   useDisconnect,
 } from "wagmi";
+
+import useSound from "use-sound";
+import flipSfx from "/sounds/coin-flip.mp3";
+import clickSfx from "/sounds/button-click.mp3";
+import song1 from "/sounds/song1.mp3";
+import song2 from "/sounds/song2.mp3";
+import song3 from "/sounds/song3.mp3";
+import song4 from "/sounds/song4.mp3";
 import Leader from "./LeaderBoard";
 import { Connector } from "@wagmi/core";
 import { parseUnits, formatUnits } from "viem";
@@ -47,11 +55,80 @@ const FlipCoin = () => {
     isApproving: false,
     isBalanceLoading: false,
   });
-
+  const [selectedSong, setSelectedSong] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playFlip] = useSound(flipSfx);
+  const [playClick] = useSound(clickSfx);
   const [requestId, setRequestId] = useState<string | null>(null);
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const { isConnected, address } = useAccount();
+
+  // Background music hooks (one for each song)
+  const [playSong1, { stop: stopSong1 }] = useSound(song1, {
+    volume: 0.5,
+    loop: true,
+  });
+  const [playSong2, { stop: stopSong2 }] = useSound(song2, {
+    volume: 0.5,
+    loop: true,
+  });
+  const [playSong3, { stop: stopSong3 }] = useSound(song3, {
+    volume: 0.5,
+    loop: true,
+  });
+  const [playSong4, { stop: stopSong4 }] = useSound(song4, {
+    volume: 0.5,
+    loop: true,
+  });
+
+  const songOptions = [
+    { id: "off", name: "Music Off", play: null, stop: null },
+    { id: "song1", name: "tv off: K.Lamar", play: playSong1, stop: stopSong1 },
+    { id: "song2", name: "POMH: Wizkid", play: playSong2, stop: stopSong2 },
+    {
+      id: "song3",
+      name: "Not like us: K.Lamar",
+      play: playSong3,
+      stop: stopSong3,
+    },
+    {
+      id: "song4",
+      name: "Country home: J.Denver",
+      play: playSong4,
+      stop: stopSong4,
+    },
+  ];
+
+  const handleSongChange = (songId: string) => {
+    // Stop all songs first
+    stopSong1();
+    stopSong2();
+    stopSong3();
+    stopSong4();
+    setIsPlaying(false);
+
+    if (songId === "off") {
+      setSelectedSong(null);
+    } else {
+      const selected = songOptions.find((song) => song.id === songId);
+      if (selected && selected.play) {
+        setSelectedSong(songId);
+        selected.play();
+        setIsPlaying(true);
+      }
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopSong1();
+      stopSong2();
+      stopSong3();
+      stopSong4();
+    };
+  }, [stopSong1, stopSong2, stopSong3, stopSong4]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedConnector, setSelectedConnector] = useState<Connector | null>(
@@ -326,6 +403,7 @@ const FlipCoin = () => {
   };
 
   const handleFlipCoin = async () => {
+    playClick();
     const validationError = validateInput();
     if (validationError) {
       setState((prev) => ({ ...prev, error: validationError }));
@@ -341,6 +419,7 @@ const FlipCoin = () => {
     setIsFlipping(true);
 
     try {
+      playFlip();
       const amountInWei = parseUnits(state.tokenAmount, decimals);
       const currentAllowance = allowanceData
         ? BigInt(allowanceData as bigint)
@@ -831,6 +910,27 @@ const FlipCoin = () => {
                   {Object.entries(SUPPORTED_TOKENS).map(([key, value]) => (
                     <option key={key} value={value}>
                       {key}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* Music Selection */}
+              <div className="flex flex-col w-full">
+                <label
+                  htmlFor="music"
+                  className="block text-md font-medium text-purple-200 mb-1"
+                >
+                  Background Music
+                </label>
+                <select
+                  id="music"
+                  value={selectedSong || "off"}
+                  onChange={(e) => handleSongChange(e.target.value)}
+                  className="w-full text-gray-700 px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                >
+                  {songOptions.map((song) => (
+                    <option key={song.id} value={song.id}>
+                      {song.name}
                     </option>
                   ))}
                 </select>
