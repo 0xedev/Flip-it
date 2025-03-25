@@ -4,7 +4,7 @@ import { Home, PlusCircle,  Gamepad, User } from "lucide-react";
 import GameList from "./PvpSection/Available";
 import CreateGame from "./PvpSection/CreateGame";
 import Leaderb from "./PvpSection/Leaderb";
-import MyGame from "./PvpSection/MyGame";
+import { MyGame } from "./PvpSection/MyGame";
 import Modal from "./PvpSection/Modal";
 import { Connector } from "@wagmi/core";
 import {
