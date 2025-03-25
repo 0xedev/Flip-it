@@ -378,7 +378,7 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Token Selection */}
-        <div className="mb-4 sm:mb-6">
+        <div className="text-black mb-4 sm:mb-6">
           <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
             Token
             <span
@@ -416,7 +416,7 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Bet Amount */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 text-black sm:mb-6">
           <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
             Bet Amount
             <span
@@ -482,7 +482,7 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Timeout */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-4 text-black sm:mb-6">
           <button
             className="flex justify-between w-full text-sm font-medium text-gray-800 mb-2 focus:outline-none"
             onClick={() => setShowAdvanced(!showAdvanced)}
