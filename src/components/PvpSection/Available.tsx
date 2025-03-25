@@ -1,4 +1,4 @@
-import  { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   useWriteContract,
   useWaitForTransactionReceipt,
@@ -19,14 +19,16 @@ const FlipCoinFrontend = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [cancelingBetId, setCancelingBetId] = useState<number | null>(null);
   const [cancelHash, setCancelHash] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<{
-    message: string;
-    player1: string;
-    player2: string;
-    winner: string;
-    payout: string;
-    timestamp: number;
-  }[]>([]);
+  const [notifications, setNotifications] = useState<
+    {
+      message: string;
+      player1: string;
+      player2: string;
+      winner: string;
+      payout: string;
+      timestamp: number;
+    }[]
+  >([]);
   const betsPerPage = 5;
 
   // --- allBets Read Function ---
@@ -63,7 +65,6 @@ const FlipCoinFrontend = () => {
 
   // --- Cancel Bet Write Function ---
   const {
-    data: cancelBetHash,
     writeContract: writeCancelBet,
     isPending: isCancelPending,
     error: cancelError,
@@ -89,30 +90,44 @@ const FlipCoinFrontend = () => {
     address: ADDRESS as Address,
     abi: ABI,
     eventName: "Notification",
-    onLogs(logs) {
+    onLogs(logs: any[]) {
       logs.forEach((log) => {
-        const { player1, player2, winner, status, payout, playerFace, outcome } = log.args;
+        const {
+          player1,
+          player2,
+          winner,
+          status,
+          payout,
+          playerFace,
+          outcome,
+        } = log.args;
         const face = playerFace ? "Heads" : "Tails";
         const result = outcome ? "Heads" : "Tails";
-        
+
         let message = "";
         if (status === "Fulfilled") {
-          message = `Game resolved! Bet was ${face}, result was ${result}. Winner: ${winner === userAddress ? "You" : winner.slice(0, 6) + "..." + winner.slice(-4)}`;
+          message = `Game resolved! Bet was ${face}, result was ${result}. Winner: ${
+            winner === userAddress
+              ? "You"
+              : winner.slice(0, 6) + "..." + winner.slice(-4)
+          }`;
         } else {
           message = `Game status updated: ${status}`;
         }
 
-        setNotifications((prev) => [
-          {
-            message,
-            player1,
-            player2,
-            winner,
-            payout: formatEther(payout),
-            timestamp: Date.now(),
-          },
-          ...prev,
-        ].slice(0, 10)); // Keep only last 10 notifications
+        setNotifications((prev) =>
+          [
+            {
+              message,
+              player1,
+              player2,
+              winner,
+              payout: formatEther(payout),
+              timestamp: Date.now(),
+            },
+            ...prev,
+          ].slice(0, 10)
+        ); // Keep only last 10 notifications
       });
     },
   });
@@ -120,7 +135,9 @@ const FlipCoinFrontend = () => {
   // Update bets state when allBetsData changes
   useEffect(() => {
     if (allBetsData) {
-      const sortedBets = [...(allBetsData as any[])].sort((a, b) => Number(b.id) - Number(a.id));
+      const sortedBets = [...(allBetsData as any[])].sort(
+        (a, b) => Number(b.id) - Number(a.id)
+      );
       setAllBets(sortedBets);
       const pending = sortedBets.filter((bet) => bet.status === "Pending");
       setPendingBets(pending);
@@ -144,7 +161,9 @@ const FlipCoinFrontend = () => {
     const token = SUPPORTED_TOKENS.find(
       (t) => t.address.toLowerCase() === address.toLowerCase()
     );
-    return token ? token.symbol : address.slice(0, 6) + "..." + address.slice(-4);
+    return token
+      ? token.symbol
+      : address.slice(0, 6) + "..." + address.slice(-4);
   };
 
   // Format timeout to human readable format
@@ -182,7 +201,12 @@ const FlipCoinFrontend = () => {
 
       // If not native token, approve first
       if (bet.token !== "0x0000000000000000000000000000000000000000") {
-        console.log("Approving token:", bet.token, "Amount:", bet.amount.toString());
+        console.log(
+          "Approving token:",
+          bet.token,
+          "Amount:",
+          bet.amount.toString()
+        );
         const approvalSuccess = await new Promise<boolean>((resolve) => {
           setApproving(true);
           writeApprove(
@@ -248,7 +272,10 @@ const FlipCoinFrontend = () => {
         abi: ABI,
         functionName: "joinGame",
         args: [betId],
-        value: bet.token === "0x0000000000000000000000000000000000000000" ? bet.amount : BigInt(0),
+        value:
+          bet.token === "0x0000000000000000000000000000000000000000"
+            ? bet.amount
+            : BigInt(0),
       });
     } catch (error) {
       console.error("Unexpected error in handleJoinGame:", error);
@@ -300,7 +327,9 @@ const FlipCoinFrontend = () => {
             className="bg-white p-4 mb-2 rounded-lg shadow-lg border-l-4 border-green-500 animate-fadeIn"
           >
             <p className="font-bold mb-1 text-black">{notification.message}</p>
-            <p className="text-xs text-gray-600">{new Date(notification.timestamp).toLocaleTimeString()}</p>
+            <p className="text-xs text-gray-600">
+              {new Date(notification.timestamp).toLocaleTimeString()}
+            </p>
             {notification.winner && notification.payout && (
               <p className="mt-1 text-sm text-black">
                 Payout: {parseFloat(notification.payout).toFixed(4)} ETH
@@ -314,7 +343,8 @@ const FlipCoinFrontend = () => {
 
   // Render Bets Table
   const renderBets = () => {
-    if (!pendingBets.length) return <p className="text-black">No pending bets available.</p>;
+    if (!pendingBets.length)
+      return <p className="text-black">No pending bets available.</p>;
 
     return (
       <>
@@ -333,14 +363,18 @@ const FlipCoinFrontend = () => {
           </thead>
           <tbody>
             {currentBets.map((bet) => {
-              const isExpired = getRemainingTime(bet.timestamp, bet.timeout) === "Expired";
+              const isExpired =
+                getRemainingTime(bet.timestamp, bet.timeout) === "Expired";
               const isCreator = bet.player1 === userAddress;
-              const isCancelingThisBet = cancelingBetId === Number(bet.id) && isCancelPending;
+              const isCancelingThisBet =
+                cancelingBetId === Number(bet.id) && isCancelPending;
               const isProcessing =
                 (approving || isApproving || isJoining || isJoinConfirming) &&
                 selectedBetId === Number(bet.id);
 
-              const formattedAmount = parseFloat(formatEther(bet.amount)).toFixed(2);
+              const formattedAmount = parseFloat(
+                formatEther(bet.amount)
+              ).toFixed(2);
 
               return (
                 <tr key={Number(bet.id)}>
@@ -352,7 +386,9 @@ const FlipCoinFrontend = () => {
                   <td className="p-2">{getTokenSymbol(bet.token)}</td>
                   <td className="p-2">{bet.player1Face ? "Heads" : "Tails"}</td>
                   <td className="p-2">{formatTimeout(bet.timeout)}</td>
-                  <td className="p-2">{getRemainingTime(bet.timestamp, bet.timeout)}</td>
+                  <td className="p-2">
+                    {getRemainingTime(bet.timestamp, bet.timeout)}
+                  </td>
                   <td className="p-2">
                     {isExpired ? (
                       isCreator ? (
@@ -395,9 +431,13 @@ const FlipCoinFrontend = () => {
             >
               Previous
             </button>
-            <span className="text-black">Page {currentPage} of {totalPages}</span>
+            <span className="text-black">
+              Page {currentPage} of {totalPages}
+            </span>
             <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              onClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
               disabled={currentPage === totalPages || totalPages === 0}
               className="bg-gray-500 text-white p-2 rounded-md"
             >
@@ -428,18 +468,32 @@ const FlipCoinFrontend = () => {
 
       {approvalHash && (
         <div className="mt-5 p-4 bg-gray-100">
-          <p className="text-black">Approval Transaction Hash: {approvalHash}</p>
-          {isApproveConfirming && <p className="text-black">Waiting for approval confirmation...</p>}
-          {isApproveConfirmed && <p className="text-black">Token approved successfully!</p>}
+          <p className="text-black">
+            Approval Transaction Hash: {approvalHash}
+          </p>
+          {isApproveConfirming && (
+            <p className="text-black">Waiting for approval confirmation...</p>
+          )}
+          {isApproveConfirmed && (
+            <p className="text-black">Token approved successfully!</p>
+          )}
         </div>
       )}
-      {approveError && <p className="text-red-500">Approval Error: {approveError.message}</p>}
+      {approveError && (
+        <p className="text-red-500">Approval Error: {approveError.message}</p>
+      )}
 
       {joinGameHash && (
         <div className="mt-5 p-4 bg-gray-100">
-          <p className="text-black">Join Game Transaction Hash: {joinGameHash}</p>
-          {isJoinConfirming && <p className="text-black">Waiting for confirmation...</p>}
-          {isJoinConfirmed && <p className="text-black">Game joined successfully!</p>}
+          <p className="text-black">
+            Join Game Transaction Hash: {joinGameHash}
+          </p>
+          {isJoinConfirming && (
+            <p className="text-black">Waiting for confirmation...</p>
+          )}
+          {isJoinConfirmed && (
+            <p className="text-black">Game joined successfully!</p>
+          )}
         </div>
       )}
       {joinError && <p className="text-red-500">Error: {joinError.message}</p>}
@@ -447,11 +501,17 @@ const FlipCoinFrontend = () => {
       {cancelHash && (
         <div className="mt-5 p-4 bg-gray-100">
           <p className="text-black">Cancel Transaction Hash: {cancelHash}</p>
-          {isCancelConfirming && <p className="text-black">Waiting for cancel confirmation...</p>}
-          {isCancelConfirmed && <p className="text-black">Bet canceled successfully!</p>}
+          {isCancelConfirming && (
+            <p className="text-black">Waiting for cancel confirmation...</p>
+          )}
+          {isCancelConfirmed && (
+            <p className="text-black">Bet canceled successfully!</p>
+          )}
         </div>
       )}
-      {cancelError && <p className="text-red-500">Cancel Error: {cancelError.message}</p>}
+      {cancelError && (
+        <p className="text-red-500">Cancel Error: {cancelError.message}</p>
+      )}
     </div>
   );
 };
