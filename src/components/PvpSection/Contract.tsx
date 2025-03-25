@@ -1,4 +1,4 @@
-export const ABI =[
+export const ABI = [
 	{
 		"inputs": [],
 		"name": "acceptOwnership",
@@ -460,6 +460,11 @@ export const ABI =[
 						"internalType": "uint256",
 						"name": "id",
 						"type": "uint256"
+					},
+					{
+						"internalType": "address",
+						"name": "winner",
+						"type": "address"
 					}
 				],
 				"internalType": "struct FlipCoinPvP.GameMatch[]",
@@ -714,6 +719,11 @@ export const ABI =[
 				"internalType": "uint256",
 				"name": "id",
 				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "winner",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -788,7 +798,7 @@ export const ABI =[
 
 
 // src/contracts/FlipGameContract.ts
-export const ADDRESS = "0x5363e7260611735e4493e8ead43d615beB350715"; // Replace with your contract address
+export const ADDRESS = "0xFab91979B801314028d17bc567C08AcB4aA77186"; // Replace with your contract address
 
 // Supported tokens -
 export const SUPPORTED_TOKENS = [
