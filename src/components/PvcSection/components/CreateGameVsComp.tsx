@@ -537,30 +537,22 @@ const FlipCoin = () => {
         {!isConnected ? (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors duration-200"
+            className="text-xs text-purple-300 hover:text-purple-100 transition-colors duration-200"
           >
             Connect Wallet
           </button>
         ) : (
-          <div className="flex items-center space-x-3 bg-gray-100 rounded-lg px-4 py-2 shadow-sm border border-gray-200 max-w-[230px]">
-            <div className="flex items-center">
-              {selectedConnector?.icon && (
-                <img
-                  src={selectedConnector.icon}
-                  alt={`${selectedConnector.name} icon`}
-                  className="w-5 h-5 mr-2"
-                />
-              )}
-              <span className="text-gray-800 font-medium truncate">{`${address?.substring(
-                0,
-                6
-              )}...${address?.substring(address.length - 4)}`}</span>
-            </div>
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-purple-300">
+              {`${address?.substring(0, 6)}...${address?.substring(
+                address.length - 4
+              )}`}
+            </span>
             <button
               onClick={() => disconnect()}
-              className="bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md transition-colors duration-200"
+              className="text-xs text-purple-400 hover:text-purple-200 transition-colors"
             >
-              Disconnect
+              ×
             </button>
           </div>
         )}

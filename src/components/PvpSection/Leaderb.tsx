@@ -1,24 +1,37 @@
 import { useState, useEffect } from "react";
-import {
-  useReadContract,
-  useAccount,
-  useWatchContractEvent,
-} from "wagmi";
-import { formatEther, Address } from "viem";
+import { useReadContract, useAccount, useWatchContractEvent } from "wagmi";
+import { formatEther } from "viem";
 import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
 
 const Leaderb = () => {
   const { address } = useAccount();
-  const [bets, setBets] = useState([]);
+  interface Bet {
+    id: string;
+    betId: string;
+    player1: string;
+    player2: string;
+    token: string;
+    amount: string;
+    player1Face: string;
+    outcome: string;
+    winner: string;
+    status: string;
+    timestamp: string;
+    timeout: string;
+    fulfilled: boolean;
+    payout: string;
+  }
+
+  const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Read all bets from contract
   const { data: allBetsData, refetch } = useReadContract({
     address: ADDRESS,
     abi: ABI,
     functionName: "allBets",
-  });
+  }) as { data: any[]; refetch: () => void };
 
   // Watch for new bet events
   useWatchContractEvent({
@@ -58,13 +71,15 @@ const Leaderb = () => {
     }
   }, [allBetsData]);
 
-  const getTokenSymbol = (tokenAddress) => {
-    return SUPPORTED_TOKENS.find(
-      (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
-    )?.symbol || "Unknown";
+  const getTokenSymbol = (tokenAddress: string) => {
+    return (
+      SUPPORTED_TOKENS.find(
+        (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
+      )?.symbol || "Unknown"
+    );
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending":
         return "bg-yellow-100 text-yellow-800";
@@ -80,18 +95,22 @@ const Leaderb = () => {
     }
   };
 
-  const formatAddress = (addr) => {
+  const formatAddress = (addr: string) => {
     if (!addr) return "N/A";
     return addr === address ? "You" : `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
-  const renderWinner = (bet) => {
+  const renderWinner = (bet: Bet) => {
     if (!bet.fulfilled) return "Pending";
-    
+
     if (bet.winner) {
       return (
         <div className="flex items-center">
-          <span className={`font-medium ${bet.winner === address ? "text-green-600" : "text-gray-700"}`}>
+          <span
+            className={`font-medium ${
+              bet.winner === address ? "text-green-600" : "text-gray-700"
+            }`}
+          >
             {formatAddress(bet.winner)}
           </span>
           {bet.payout && bet.payout !== "0" && (
@@ -106,7 +125,8 @@ const Leaderb = () => {
   };
 
   if (loading) return <div className="text-center py-8">Loading bets...</div>;
-  if (error) return <div className="text-center py-8 text-red-500">Error: {error}</div>;
+  if (error)
+    return <div className="text-center py-8 text-red-500">Error: {error}</div>;
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -119,33 +139,57 @@ const Leaderb = () => {
           Refresh Bets
         </button>
       </div>
-      
+
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Bet ID
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Players
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Amount
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Choice
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Status
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Outcome
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Winner
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Created
               </th>
             </tr>
@@ -159,12 +203,26 @@ const Leaderb = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div>
-                      <span className={`${bet.player1 === address ? "font-bold text-blue-600" : ""}`}>
+                      <span
+                        className={`${
+                          bet.player1 === address
+                            ? "font-bold text-blue-600"
+                            : ""
+                        }`}
+                      >
                         {formatAddress(bet.player1)}
                       </span>
                       <span className="mx-1">vs</span>
-                      <span className={`${bet.player2 === address ? "font-bold text-blue-600" : ""}`}>
-                        {bet.player2 ? formatAddress(bet.player2) : "Waiting..."}
+                      <span
+                        className={`${
+                          bet.player2 === address
+                            ? "font-bold text-blue-600"
+                            : ""
+                        }`}
+                      >
+                        {bet.player2
+                          ? formatAddress(bet.player2)
+                          : "Waiting..."}
                       </span>
                     </div>
                   </td>
@@ -175,7 +233,11 @@ const Leaderb = () => {
                     {bet.player1Face}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(bet.status)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                        bet.status
+                      )}`}
+                    >
                       {bet.status}
                     </span>
                   </td>
@@ -192,7 +254,10 @@ const Leaderb = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
+                <td
+                  colSpan={8}
+                  className="px-6 py-4 text-center text-sm text-gray-500"
+                >
                   No bets found
                 </td>
               </tr>
@@ -202,6 +267,6 @@ const Leaderb = () => {
       </div>
     </div>
   );
-}
+};
 
 export default Leaderb;

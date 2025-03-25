@@ -344,94 +344,104 @@ const FlipCoinFrontend = () => {
   // Render Bets Table
   const renderBets = () => {
     if (!pendingBets.length)
-      return <p className="text-black">No pending bets available.</p>;
+      return (
+        <p className="text-black text-center">No pending bets available.</p>
+      );
 
     return (
       <>
-        <table className="w-full table-auto border-collapse text-black">
-          <thead>
-            <tr>
-              <th className="p-2">Bet ID</th>
-              <th className="p-2">Player 1</th>
-              <th className="p-2">Amount</th>
-              <th className="p-2">Token</th>
-              <th className="p-2">Face</th>
-              <th className="p-2">Timeout</th>
-              <th className="p-2">Time Left</th>
-              <th className="p-2">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentBets.map((bet) => {
-              const isExpired =
-                getRemainingTime(bet.timestamp, bet.timeout) === "Expired";
-              const isCreator = bet.player1 === userAddress;
-              const isCancelingThisBet =
-                cancelingBetId === Number(bet.id) && isCancelPending;
-              const isProcessing =
-                (approving || isApproving || isJoining || isJoinConfirming) &&
-                selectedBetId === Number(bet.id);
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto border-collapse text-black text-sm">
+            <thead>
+              <tr className="bg-gray-200">
+                <th className="p-2">Bet ID</th>
+                <th className="p-2">Player 1</th>
+                <th className="p-2">Amount</th>
+                <th className="p-2">Token</th>
+                <th className="p-2">Face</th>
+                <th className="p-2">Timeout</th>
+                <th className="p-2">Time Left</th>
+                <th className="p-2">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentBets.map((bet) => {
+                const isExpired =
+                  getRemainingTime(bet.timestamp, bet.timeout) === "Expired";
+                const isCreator = bet.player1 === userAddress;
+                const isCancelingThisBet =
+                  cancelingBetId === Number(bet.id) && isCancelPending;
+                const isProcessing =
+                  (approving || isApproving || isJoining || isJoinConfirming) &&
+                  selectedBetId === Number(bet.id);
 
-              const formattedAmount = parseFloat(
-                formatEther(bet.amount)
-              ).toFixed(2);
+                const formattedAmount = parseFloat(
+                  formatEther(bet.amount)
+                ).toFixed(2);
 
-              return (
-                <tr key={Number(bet.id)}>
-                  <td className="p-2">{Number(bet.id)}</td>
-                  <td className="p-2">
-                    {bet.player1.slice(0, 6)}...{bet.player1.slice(-4)}
-                  </td>
-                  <td className="p-2">{formattedAmount}</td>
-                  <td className="p-2">{getTokenSymbol(bet.token)}</td>
-                  <td className="p-2">{bet.player1Face ? "Heads" : "Tails"}</td>
-                  <td className="p-2">{formatTimeout(bet.timeout)}</td>
-                  <td className="p-2">
-                    {getRemainingTime(bet.timestamp, bet.timeout)}
-                  </td>
-                  <td className="p-2">
-                    {isExpired ? (
-                      isCreator ? (
-                        <button
-                          onClick={() => handleCancelBet(Number(bet.id))}
-                          disabled={isCancelingThisBet}
-                          className="bg-red-500 text-white p-2 rounded-md"
-                        >
-                          {isCancelingThisBet ? "Canceling..." : "Cancel Bet"}
-                        </button>
+                return (
+                  <tr key={Number(bet.id)} className="border-b">
+                    <td className="p-2 text-center">{Number(bet.id)}</td>
+                    <td className="p-2 text-center">
+                      {bet.player1.slice(0, 4)}...{bet.player1.slice(-4)}
+                    </td>
+                    <td className="p-2 text-center">{formattedAmount}</td>
+                    <td className="p-2 text-center">
+                      {getTokenSymbol(bet.token)}
+                    </td>
+                    <td className="p-2 text-center">
+                      {bet.player1Face ? "Heads" : "Tails"}
+                    </td>
+                    <td className="p-2 text-center">
+                      {formatTimeout(bet.timeout)}
+                    </td>
+                    <td className="p-2 text-center">
+                      {getRemainingTime(bet.timestamp, bet.timeout)}
+                    </td>
+                    <td className="p-2 text-center">
+                      {isExpired ? (
+                        isCreator ? (
+                          <button
+                            onClick={() => handleCancelBet(Number(bet.id))}
+                            disabled={isCancelingThisBet}
+                            className="bg-red-500 text-white px-2 py-1 rounded-md text-xs w-full"
+                          >
+                            {isCancelingThisBet ? "Canceling..." : "Cancel"}
+                          </button>
+                        ) : (
+                          <span className="text-gray-500 text-xs">Expired</span>
+                        )
                       ) : (
-                        <span className="text-gray-500">Expired</span>
-                      )
-                    ) : (
-                      <button
-                        onClick={() => handleJoinGame(Number(bet.id))}
-                        disabled={isProcessing || bet.player1 === userAddress}
-                        className="bg-blue-500 text-white p-2 rounded-md"
-                      >
-                        {isProcessing
-                          ? approving || isApproving
-                            ? "Approving..."
-                            : "Joining..."
-                          : "Join Game"}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                        <button
+                          onClick={() => handleJoinGame(Number(bet.id))}
+                          disabled={isProcessing || bet.player1 === userAddress}
+                          className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs w-full"
+                        >
+                          {isProcessing
+                            ? approving || isApproving
+                              ? "Approving..."
+                              : "Joining..."
+                            : "Join"}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         {totalPages > 1 && (
-          <div className="mt-5 flex justify-center gap-3">
+          <div className="mt-4 flex flex-wrap justify-center gap-2 text-black">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="bg-gray-500 text-white p-2 rounded-md"
+              className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm"
             >
-              Previous
+              Prev
             </button>
-            <span className="text-black">
+            <span className="text-sm py-1">
               Page {currentPage} of {totalPages}
             </span>
             <button
@@ -439,7 +449,7 @@ const FlipCoinFrontend = () => {
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
               }
               disabled={currentPage === totalPages || totalPages === 0}
-              className="bg-gray-500 text-white p-2 rounded-md"
+              className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm"
             >
               Next
             </button>
@@ -450,67 +460,80 @@ const FlipCoinFrontend = () => {
   };
 
   return (
-    <div className="p-5 max-w-4xl mx-auto">
+    <div className="p-4 w-full max-w-[614px] mx-auto] bg-gray-50">
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @media (max-width: 614px) {
+          table {
+            font-size: 12px;
+          }
+          td, th {
+            padding: 6px;
+          }
+          button {
+            padding: 4px 8px;
+            font-size: 12px;
+          }
+          .max-w-4xl {
+            max-width: 100%;
+          }
+        }
       `}</style>
 
       {renderNotifications()}
-      <h1 className="text-black text-3xl font-bold mb-5">Flip Coin PvP</h1>
+      <h1 className="text-black text-2xl font-bold mb-4 text-center">
+        Flip Coin PvP
+      </h1>
 
       <section>
-        <h2 className="text-black text-2xl font-semibold mb-3">Pending Bets</h2>
+        <h2 className="text-black text-xl font-semibold mb-3 text-center">
+          Pending Bets
+        </h2>
         {renderBets()}
       </section>
 
-      {approvalHash && (
-        <div className="mt-5 p-4 bg-gray-100">
-          <p className="text-black">
-            Approval Transaction Hash: {approvalHash}
-          </p>
-          {isApproveConfirming && (
-            <p className="text-black">Waiting for approval confirmation...</p>
+      {(approvalHash || joinGameHash || cancelHash) && (
+        <div className="mt-4 p-3 bg-gray-100 rounded-lg text-sm">
+          {approvalHash && (
+            <>
+              <p className="text-black break-words">
+                Approval Tx: {approvalHash.slice(0, 6)}...
+                {approvalHash.slice(-4)}
+              </p>
+              {isApproveConfirming && (
+                <p className="text-black">Approving...</p>
+              )}
+              {isApproveConfirmed && <p className="text-black">Approved!</p>}
+            </>
           )}
-          {isApproveConfirmed && (
-            <p className="text-black">Token approved successfully!</p>
+          {joinGameHash && (
+            <>
+              <p className="text-black break-words">
+                Join Tx: {joinGameHash.slice(0, 6)}...{joinGameHash.slice(-4)}
+              </p>
+              {isJoinConfirming && <p className="text-black">Joining...</p>}
+              {isJoinConfirmed && <p className="text-black">Joined!</p>}
+            </>
           )}
-        </div>
-      )}
-      {approveError && (
-        <p className="text-red-500">Approval Error: {approveError.message}</p>
-      )}
-
-      {joinGameHash && (
-        <div className="mt-5 p-4 bg-gray-100">
-          <p className="text-black">
-            Join Game Transaction Hash: {joinGameHash}
-          </p>
-          {isJoinConfirming && (
-            <p className="text-black">Waiting for confirmation...</p>
-          )}
-          {isJoinConfirmed && (
-            <p className="text-black">Game joined successfully!</p>
-          )}
-        </div>
-      )}
-      {joinError && <p className="text-red-500">Error: {joinError.message}</p>}
-
-      {cancelHash && (
-        <div className="mt-5 p-4 bg-gray-100">
-          <p className="text-black">Cancel Transaction Hash: {cancelHash}</p>
-          {isCancelConfirming && (
-            <p className="text-black">Waiting for cancel confirmation...</p>
-          )}
-          {isCancelConfirmed && (
-            <p className="text-black">Bet canceled successfully!</p>
+          {cancelHash && (
+            <>
+              <p className="text-black break-words">
+                Cancel Tx: {cancelHash.slice(0, 6)}...{cancelHash.slice(-4)}
+              </p>
+              {isCancelConfirming && <p className="text-black">Canceling...</p>}
+              {isCancelConfirmed && <p className="text-black">Canceled!</p>}
+            </>
           )}
         </div>
       )}
-      {cancelError && (
-        <p className="text-red-500">Cancel Error: {cancelError.message}</p>
+      {(approveError || joinError || cancelError) && (
+        <p className="text-red-500 text-sm mt-2 break-words">
+          Error:{" "}
+          {(approveError || joinError || cancelError)?.message.slice(0, 50)}...
+        </p>
       )}
     </div>
   );
