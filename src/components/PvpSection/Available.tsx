@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import  { useState, useEffect } from "react";
 import {
   useWriteContract,
   useWaitForTransactionReceipt,
@@ -7,433 +7,453 @@ import {
   useWatchContractEvent,
 } from "wagmi";
 import { formatEther, Address } from "viem";
-import { CircleDollarSign, XCircle, GamepadIcon } from "lucide-react";
 import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
 
-interface PendingBet {
-  betId: number;
-  player: Address;
-  token: Address;
-  amount: bigint;
-  face: boolean;
-  timestamp: bigint;
-}
-
-const LoadingSpinner: React.FC = () => (
-  <div className="flex flex-col items-center justify-center h-64 gap-8">
-    <div className="coin">
-      <div className="coin-face coin-front">
-        <CircleDollarSign className="w-full h-full text-white/90 p-6" />
-      </div>
-      <div className="coin-face coin-back">
-        <CircleDollarSign className="w-full h-full text-white/90 p-6" />
-      </div>
-    </div>
-    <span className="text-xl font-semibold loading-text">
-      Processing transaction...
-    </span>
-  </div>
-);
-
-const GameList: React.FC = () => {
-  const { isConnected, address } = useAccount();
-  const [selectedToken] = useState<Address>(SUPPORTED_TOKENS[0]?.address as `0x${string}` || "0x0000000000000000000000000000000000000000");
-  const [pendingBets, setPendingBets] = useState<PendingBet[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+const FlipCoinFrontend = () => {
+  const { address: userAddress } = useAccount();
+  const [selectedBetId, setSelectedBetId] = useState<number | null>(null);
+  const [allBets, setAllBets] = useState<any[]>([]);
+  const [pendingBets, setPendingBets] = useState<any[]>([]);
+  const [approving, setApproving] = useState<boolean>(false);
+  const [approvalHash, setApprovalHash] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [, setTokenBalance] = useState<string>("0");
-  const [isApprovalPending, setIsApprovalPending] = useState(false);
-  const [approvalTxHash, setApprovalTxHash] = useState<string | null>(null);
-  const gamesPerPage = 5;
+  const [cancelingBetId, setCancelingBetId] = useState<number | null>(null);
+  const [cancelHash, setCancelHash] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<{
+    message: string;
+    player1: string;
+    player2: string;
+    winner: string;
+    payout: string;
+    timestamp: number;
+  }[]>([]);
+  const betsPerPage = 5;
 
-  const { data: writeData, writeContract } = useWriteContract();
-  const { isSuccess: isTxSuccess, isError: isTxError } = useWaitForTransactionReceipt({
-    hash: writeData,
-  });
-
-  const { isSuccess: isApprovalSuccess, isError: isApprovalError } = 
-    approvalTxHash
-      ? useWaitForTransactionReceipt({
-          hash: approvalTxHash as `0x${string}`,
-        })
-      : { isSuccess: false, isError: false };
-
-  const { data: pendingBetsData, refetch: refetchPendingBets } = useReadContract({
-    address: ADDRESS,
+  // --- allBets Read Function ---
+  const { data: allBetsData, refetch: refetchAllBets } = useReadContract({
+    address: ADDRESS as Address,
     abi: ABI,
-    functionName: "getPendingBets",
-    query: { enabled: isConnected },
+    functionName: "allBets",
   });
 
+  // --- Token Approval Write Function ---
   const {
-    data: balanceData,
-    refetch: refetchBalance,
-  } = useReadContract({
-    address: selectedToken,
-    abi: [
-      {
-        name: "balanceOf",
-        type: "function",
-        inputs: [{ name: "owner", type: "address" }],
-        outputs: [{ name: "", type: "uint256" }],
-        stateMutability: "view",
-      },
-    ],
-    functionName: "balanceOf",
-    args: [address as `0x${string}`],
-    query: { enabled: !!address && !!selectedToken },
-  });
+    writeContract: writeApprove,
+    isPending: isApproving,
+    error: approveError,
+  } = useWriteContract();
 
+  const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } =
+    useWaitForTransactionReceipt({
+      hash: approvalHash as `0x${string}`,
+    });
+
+  // --- Join Game Write Function ---
+  const {
+    data: joinGameHash,
+    writeContract: joinGame,
+    isPending: isJoining,
+    error: joinError,
+  } = useWriteContract();
+
+  const { isLoading: isJoinConfirming, isSuccess: isJoinConfirmed } =
+    useWaitForTransactionReceipt({
+      hash: joinGameHash,
+    });
+
+  // --- Cancel Bet Write Function ---
+  const {
+    data: cancelBetHash,
+    writeContract: writeCancelBet,
+    isPending: isCancelPending,
+    error: cancelError,
+  } = useWriteContract();
+
+  const { isLoading: isCancelConfirming, isSuccess: isCancelConfirmed } =
+    useWaitForTransactionReceipt({
+      hash: cancelHash as `0x${string}`,
+    });
+
+  // --- Watch Contract Events ---
   useWatchContractEvent({
-    address: ADDRESS,
+    address: ADDRESS as Address,
     abi: ABI,
-    eventName: "MatchFulfilled",
-    onLogs() {
-      refetchPendingBets();
-      refetchBalance();
-      setSuccess("Game completed! Check results!");
-      setTimeout(() => setSuccess(null), 5000);
+    eventName: "AllBets",
+    onLogs(logs) {
+      console.log("New bet event:", logs);
+      refetchAllBets();
     },
   });
 
-  const handleContractEvent = useCallback((message: string) => {
-    refetchPendingBets();
-    refetchBalance();
-    setSuccess(message);
-    setTimeout(() => setSuccess(null), 5000);
-  }, [refetchPendingBets, refetchBalance]);
-
   useWatchContractEvent({
-    address: ADDRESS,
+    address: ADDRESS as Address,
     abi: ABI,
-    eventName: "BetPlaced",
-    onLogs: () => handleContractEvent("Bet placed successfully!"),
-  });
+    eventName: "Notification",
+    onLogs(logs) {
+      logs.forEach((log) => {
+        const { player1, player2, winner, status, payout, playerFace, outcome } = log.args;
+        const face = playerFace ? "Heads" : "Tails";
+        const result = outcome ? "Heads" : "Tails";
+        
+        let message = "";
+        if (status === "Fulfilled") {
+          message = `Game resolved! Bet was ${face}, result was ${result}. Winner: ${winner === userAddress ? "You" : winner.slice(0, 6) + "..." + winner.slice(-4)}`;
+        } else {
+          message = `Game status updated: ${status}`;
+        }
 
-  useWatchContractEvent({
-    address: ADDRESS,
-    abi: ABI,
-    eventName: "MatchCreated",
-    onLogs: () => handleContractEvent("Successfully joined the game!"),
-  });
-
-  useWatchContractEvent({
-    address: ADDRESS,
-    abi: ABI,
-    eventName: "BetCanceled",
-    onLogs: () => handleContractEvent("Bet successfully canceled!"),
-  });
-
-  const isBetActive = useCallback((bet: PendingBet): boolean => {
-    const now = BigInt(Math.floor(Date.now() / 1000));
-    const timeout = BigInt(3600);
-    return now < bet.timestamp + timeout;
-  }, []);
-
-  useEffect(() => {
-    if (isConnected && address) {
-      setLoading(true);
-      console.log("Fetching pending bets and balance...");
-      Promise.all([refetchPendingBets(), refetchBalance()])
-        .catch((err) => {
-          setErrorMessage(`Failed to fetch data: ${err.message}`);
-          console.error(err);
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [isConnected, address, refetchPendingBets, refetchBalance]);
-
-  useEffect(() => {
-    if (pendingBetsData) {
-      const formattedBets = (pendingBetsData as any[]).map((bet, index) => ({
-        betId: index + 1,
-        player: bet.player as Address,
-        token: bet.token as Address,
-        amount: bet.amount as bigint,
-        face: bet.face as boolean,
-        timestamp: bet.timestamp as bigint
-      }));
-      console.log("Pending Bets:", formattedBets);
-      setPendingBets(formattedBets);
-    }
-  }, [pendingBetsData]);
-
-  useEffect(() => {
-    if (balanceData) {
-      setTokenBalance(formatEther(balanceData as bigint));
-      console.log("Token balance:", formatEther(balanceData as bigint));
-    }
-  }, [balanceData]);
-
-  useEffect(() => {
-    if (isTxSuccess) {
-      setLoading(false);
-      setSuccess("Transaction confirmed!");
-      refetchBalance();
-      setTimeout(() => setSuccess(null), 5000);
-    } else if (isTxError) {
-      setLoading(false);
-      setErrorMessage("Transaction failed");
-      setTimeout(() => setErrorMessage(null), 5000);
-    }
-  }, [isTxSuccess, isTxError, refetchBalance]);
-
-  useEffect(() => {
-    if (isApprovalSuccess) {
-      setIsApprovalPending(false);
-      setApprovalTxHash(null);
-      console.log("Token approval successful");
-    }
-    if (isApprovalError) {
-      setLoading(false);
-      setIsApprovalPending(false);
-      setApprovalTxHash(null);
-      setErrorMessage("Token approval failed");
-      setTimeout(() => setErrorMessage(null), 5000);
-      console.log("Token approval failed");
-    }
-  }, [isApprovalSuccess, isApprovalError]);
-
-  const approveTokens = async (amount: bigint, tokenAddress: Address) => {
-    setIsApprovalPending(true);
-    try {
-      const approvalAmount = amount * BigInt(1); // Approve 10x the needed amount
-      const result = await writeContract({
-        address: tokenAddress as `0x${string}`,
-        abi: [
+        setNotifications((prev) => [
           {
-            inputs: [
-              { name: "spender", type: "address" },
-              { name: "amount", type: "uint256" }
-            ],
-            name: "approve",
-            outputs: [{ name: "", type: "bool" }],
-            stateMutability: "nonpayable",
-            type: "function"
-          }
-        ],
-        functionName: "approve",
-        args: [ADDRESS, approvalAmount],
+            message,
+            player1,
+            player2,
+            winner,
+            payout: formatEther(payout),
+            timestamp: Date.now(),
+          },
+          ...prev,
+        ].slice(0, 10)); // Keep only last 10 notifications
       });
+    },
+  });
 
-      if (result !== undefined && typeof result === "string") {
-        setApprovalTxHash(result);
-      } else {
-        throw new Error("Failed to retrieve transaction hash");
-      }
-      console.log("Approval TX hash:", result);
-      return true;
-    } catch (error) {
-      setIsApprovalPending(false);
-      setErrorMessage("Failed to approve tokens");
-      setTimeout(() => setErrorMessage(null), 5000);
-      console.error("Approval failed:", error);
-      return false;
+  // Update bets state when allBetsData changes
+  useEffect(() => {
+    if (allBetsData) {
+      const sortedBets = [...(allBetsData as any[])].sort((a, b) => Number(b.id) - Number(a.id));
+      setAllBets(sortedBets);
+      const pending = sortedBets.filter((bet) => bet.status === "Pending");
+      setPendingBets(pending);
     }
+  }, [allBetsData]);
+
+  // Reset approval state when bet changes
+  useEffect(() => {
+    setApproving(false);
+    setApprovalHash(null);
+  }, [selectedBetId]);
+
+  // Get current bets for pagination
+  const indexOfLastBet = currentPage * betsPerPage;
+  const indexOfFirstBet = indexOfLastBet - betsPerPage;
+  const currentBets = pendingBets.slice(indexOfFirstBet, indexOfLastBet);
+  const totalPages = Math.ceil(pendingBets.length / betsPerPage);
+
+  // Get token symbol from address
+  const getTokenSymbol = (address: string) => {
+    const token = SUPPORTED_TOKENS.find(
+      (t) => t.address.toLowerCase() === address.toLowerCase()
+    );
+    return token ? token.symbol : address.slice(0, 6) + "..." + address.slice(-4);
   };
 
+  // Format timeout to human readable format
+  const formatTimeout = (timeout: bigint) => {
+    const seconds = Number(timeout);
+    if (seconds < 60) return `${seconds} seconds`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours`;
+    return `${Math.floor(seconds / 86400)} days`;
+  };
+
+  // Calculate remaining time
+  const getRemainingTime = (timestamp: bigint, timeout: bigint) => {
+    const now = Math.floor(Date.now() / 1000);
+    const endTime = Number(timestamp) + Number(timeout);
+    const remaining = endTime - now;
+    return remaining > 0 ? formatTimeout(BigInt(remaining)) : "Expired";
+  };
+
+  // Handle joining a game (approve and join in one click)
   const handleJoinGame = async (betId: number) => {
-    if (!isConnected || !address) {
-      setErrorMessage("Please connect your wallet");
-      setTimeout(() => setErrorMessage(null), 5000);
+    if (!userAddress) {
+      alert("Please connect your wallet!");
       return;
     }
 
     try {
-      setLoading(true);
-      setErrorMessage(null);
-
-      const bet = pendingBets.find(b => b.betId === betId);
-      if (!bet || !isBetActive(bet)) {
-        throw new Error("Bet not found or expired");
-      }
-
-      const balance = balanceData as bigint | undefined;
-      if (!balance || balance < bet.amount) {
-        throw new Error("Insufficient token balance");
-      }
-
-      console.log("Joining game with bet:", bet);
-
-      // Approve tokens first
-      const approved = await approveTokens(bet.amount, bet.token);
-      if (!approved) {
-        setLoading(false);
+      const bet = allBets.find((b) => Number(b.id) === betId);
+      if (!bet) {
+        alert("Bet not found!");
         return;
       }
 
-      // Wait for approval to be confirmed before joining
-      if (isApprovalPending) {
-        return;
+      setSelectedBetId(Number(bet.id));
+
+      // If not native token, approve first
+      if (bet.token !== "0x0000000000000000000000000000000000000000") {
+        console.log("Approving token:", bet.token, "Amount:", bet.amount.toString());
+        const approvalSuccess = await new Promise<boolean>((resolve) => {
+          setApproving(true);
+          writeApprove(
+            {
+              address: bet.token as Address,
+              abi: [
+                {
+                  name: "approve",
+                  type: "function",
+                  stateMutability: "nonpayable",
+                  inputs: [
+                    { name: "spender", type: "address" },
+                    { name: "amount", type: "uint256" },
+                  ],
+                  outputs: [{ type: "bool" }],
+                },
+              ],
+              functionName: "approve",
+              args: [ADDRESS, bet.amount],
+            },
+            {
+              onSuccess: (hash) => {
+                console.log("Approval transaction submitted. Hash:", hash);
+                setApprovalHash(hash);
+                const checkConfirmation = setInterval(() => {
+                  if (isApproveConfirmed) {
+                    clearInterval(checkConfirmation);
+                    setApproving(false);
+                    console.log("Approval confirmed!");
+                    resolve(true);
+                  } else if (approveError) {
+                    clearInterval(checkConfirmation);
+                    setApproving(false);
+                    console.error("Approval failed with error:", approveError);
+                    resolve(false);
+                  }
+                }, 1000); // Check every second
+              },
+              onError: (error) => {
+                console.error("Detailed approval error:", error);
+                console.error("Error name:", error.name);
+                console.error("Error message:", error.message);
+                console.error("Error stack:", error.stack);
+                setApproving(false);
+                resolve(false);
+              },
+            }
+          );
+        });
+
+        if (!approvalSuccess) {
+          alert("Token approval failed. Check the console for details.");
+          return;
+        }
+      } else {
+        console.log("Native token bet, no approval needed.");
       }
 
-      await writeContract({
-        address: ADDRESS,
+      // Proceed to join the game
+      console.log("Joining game with bet ID:", betId);
+      joinGame({
+        address: ADDRESS as Address,
         abi: ABI,
         functionName: "joinGame",
         args: [betId],
+        value: bet.token === "0x0000000000000000000000000000000000000000" ? bet.amount : BigInt(0),
       });
-      console.log(`Joined game with betId: ${betId}`);
-    } catch (err) {
-      setLoading(false);
-      setErrorMessage(err instanceof Error ? err.message : "Failed to join game");
-      setTimeout(() => setErrorMessage(null), 5000);
-      console.error("Error joining game:", err);
+    } catch (error) {
+      console.error("Unexpected error in handleJoinGame:", error);
+      alert("An unexpected error occurred. Check the console for details.");
     }
   };
 
+  // Handle canceling a bet
   const handleCancelBet = async (betId: number) => {
-    if (!isConnected || !address) {
-      setErrorMessage("Please connect your wallet");
-      setTimeout(() => setErrorMessage(null), 5000);
+    if (!userAddress) {
+      alert("Please connect your wallet!");
       return;
     }
 
     try {
-      setLoading(true);
-      setErrorMessage(null);
-      console.log(`Canceling bet with betId: ${betId}`);
-      await writeContract({
-        address: ADDRESS,
-        abi: ABI,
-        functionName: "cancelBet",
-        args: [betId],
-      });
-    } catch (err) {
-      setLoading(false);
-      setErrorMessage(err instanceof Error ? err.message : "Failed to cancel bet");
-      setTimeout(() => setErrorMessage(null), 5000);
-      console.error("Error canceling bet:", err);
+      setCancelingBetId(betId);
+      writeCancelBet(
+        {
+          address: ADDRESS as Address,
+          abi: ABI,
+          functionName: "cancelBet",
+          args: [betId],
+        },
+        {
+          onSuccess: (hash) => {
+            setCancelHash(hash);
+          },
+          onError: (error) => {
+            console.error("Cancel error:", error);
+            setCancelingBetId(null);
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error canceling bet:", error);
+      setCancelingBetId(null);
     }
   };
 
-  const activeBets = pendingBets.filter(isBetActive);
-  const sortedGames = [...activeBets].sort((a, b) => Number(b.betId) - Number(a.betId));
-  const totalPages = Math.ceil(activeBets.length / gamesPerPage);
-  const indexOfLastGame = currentPage * gamesPerPage;
-  const indexOfFirstGame = indexOfLastGame - gamesPerPage;
-  const currentGames = sortedGames.slice(indexOfFirstGame, indexOfLastGame);
+  // Render Notifications
+  const renderNotifications = () => {
+    if (!notifications.length) return null;
 
-  const getTokenSymbol = (tokenAddress: Address): string => {
-    return SUPPORTED_TOKENS.find(t => t.address.toLowerCase() === tokenAddress.toLowerCase())?.symbol || "???";
+    return (
+      <div className="fixed top-5 right-5 z-50 max-w-xs">
+        {notifications.map((notification, index) => (
+          <div
+            key={index}
+            className="bg-white p-4 mb-2 rounded-lg shadow-lg border-l-4 border-green-500 animate-fadeIn"
+          >
+            <p className="font-bold mb-1 text-black">{notification.message}</p>
+            <p className="text-xs text-gray-600">{new Date(notification.timestamp).toLocaleTimeString()}</p>
+            {notification.winner && notification.payout && (
+              <p className="mt-1 text-sm text-black">
+                Payout: {parseFloat(notification.payout).toFixed(4)} ETH
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
-  const getTimeDiff = (timestamp: bigint): string => {
-    const now = BigInt(Math.floor(Date.now() / 1000));
-    const diff = now - timestamp;
+  // Render Bets Table
+  const renderBets = () => {
+    if (!pendingBets.length) return <p className="text-black">No pending bets available.</p>;
 
-    if (diff < BigInt(60)) return `${diff.toString()} seconds ago`;
-    if (diff < BigInt(3600)) return `${(diff / BigInt(60)).toString()} minutes ago`;
-    if (diff < BigInt(86400)) return `${(diff / BigInt(3600)).toString()} hours ago`;
-    return `${(diff / BigInt(86400)).toString()} days ago`;
-  };
+    return (
+      <>
+        <table className="w-full table-auto border-collapse text-black">
+          <thead>
+            <tr>
+              <th className="p-2">Bet ID</th>
+              <th className="p-2">Player 1</th>
+              <th className="p-2">Amount</th>
+              <th className="p-2">Token</th>
+              <th className="p-2">Face</th>
+              <th className="p-2">Timeout</th>
+              <th className="p-2">Time Left</th>
+              <th className="p-2">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentBets.map((bet) => {
+              const isExpired = getRemainingTime(bet.timestamp, bet.timeout) === "Expired";
+              const isCreator = bet.player1 === userAddress;
+              const isCancelingThisBet = cancelingBetId === Number(bet.id) && isCancelPending;
+              const isProcessing =
+                (approving || isApproving || isJoining || isJoinConfirming) &&
+                selectedBetId === Number(bet.id);
 
-  const canCancelBet = (bet: PendingBet): boolean => {
-    return bet.player.toLowerCase() === address?.toLowerCase() && 
-      BigInt(Math.floor(Date.now() / 1000)) >= bet.timestamp + BigInt(3600);
+              const formattedAmount = parseFloat(formatEther(bet.amount)).toFixed(2);
+
+              return (
+                <tr key={Number(bet.id)}>
+                  <td className="p-2">{Number(bet.id)}</td>
+                  <td className="p-2">
+                    {bet.player1.slice(0, 6)}...{bet.player1.slice(-4)}
+                  </td>
+                  <td className="p-2">{formattedAmount}</td>
+                  <td className="p-2">{getTokenSymbol(bet.token)}</td>
+                  <td className="p-2">{bet.player1Face ? "Heads" : "Tails"}</td>
+                  <td className="p-2">{formatTimeout(bet.timeout)}</td>
+                  <td className="p-2">{getRemainingTime(bet.timestamp, bet.timeout)}</td>
+                  <td className="p-2">
+                    {isExpired ? (
+                      isCreator ? (
+                        <button
+                          onClick={() => handleCancelBet(Number(bet.id))}
+                          disabled={isCancelingThisBet}
+                          className="bg-red-500 text-white p-2 rounded-md"
+                        >
+                          {isCancelingThisBet ? "Canceling..." : "Cancel Bet"}
+                        </button>
+                      ) : (
+                        <span className="text-gray-500">Expired</span>
+                      )
+                    ) : (
+                      <button
+                        onClick={() => handleJoinGame(Number(bet.id))}
+                        disabled={isProcessing || bet.player1 === userAddress}
+                        className="bg-blue-500 text-white p-2 rounded-md"
+                      >
+                        {isProcessing
+                          ? approving || isApproving
+                            ? "Approving..."
+                            : "Joining..."
+                          : "Join Game"}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {totalPages > 1 && (
+          <div className="mt-5 flex justify-center gap-3">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="bg-gray-500 text-white p-2 rounded-md"
+            >
+              Previous
+            </button>
+            <span className="text-black">Page {currentPage} of {totalPages}</span>
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages || totalPages === 0}
+              className="bg-gray-500 text-white p-2 rounded-md"
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
-    <div>
-      {loading && <LoadingSpinner />}
-      <div className={`max-w-[1400px] mx-auto ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
-        {errorMessage && (
-          <div className="mb-6 bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-400">
-            <p className="flex items-center gap-2">
-              <XCircle className="w-5 h-5" />
-              {errorMessage}
-            </p>
-          </div>
-        )}
-        {success && (
-          <div className="mb-6 bg-green-500/20 border border-green-500/50 rounded-lg p-4 text-green-400">
-            <p className="flex items-center gap-2">{success}</p>
-          </div>
-        )}
+    <div className="p-5 max-w-4xl mx-auto">
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
 
-        {activeBets.length === 0 && !loading ? (
-          <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 shadow-xl p-8 text-center">
-            <GamepadIcon className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">
-              No Available Games
-            </h3>
-            <p className="text-white/70">
-              There are currently no active games to join. Check back later or create a game.
-            </p>
-          </div>
-        ) : (
-          !loading && (
-            <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 shadow-xl overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full table-auto">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-b border-white/10">
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-white">Choice</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-white">Token Name</th>
-                      <th className="px-6 py-4 text-left text-sm font-semibold text-white">Amount</th>
-                      <th className="px-6 py-4 text-center text-sm font-semibold text-white">Created</th>
-                      <th className="px-6 py-4 text-center text-sm font-semibold text-white">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/10">
-                    {currentGames.map((bet) => (
-                      <tr key={bet.betId} className="bg-white/10">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{bet.face ? "Tails" : "Heads"}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{getTokenSymbol(bet.token)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{formatEther(bet.amount)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{getTimeDiff(bet.timestamp)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-white">
-                          {bet.player.toLowerCase() === address?.toLowerCase() ? (
-                            <button
-                              onClick={() => handleCancelBet(bet.betId)}
-                              className={`py-1 px-4 rounded text-sm ${canCancelBet(bet) ? 'bg-red-500 text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
-                              disabled={loading || !canCancelBet(bet)}
-                            >
-                              {canCancelBet(bet) ? "Cancel" : "Waiting"}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleJoinGame(bet.betId)}
-                              className="py-1 px-4 rounded bg-green-500 text-white text-sm disabled:opacity-50"
-                              disabled={loading || isApprovalPending}
-                            >
-                              Join
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+      {renderNotifications()}
+      <h1 className="text-black text-3xl font-bold mb-5">Flip Coin PvP</h1>
 
-              {totalPages > 1 && (
-                <div className="flex justify-between items-center p-4">
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1 || loading}
-                    className="px-4 py-2 bg-purple-500 text-white rounded-lg disabled:opacity-50"
-                  >
-                    Previous
-                  </button>
-                  <span className="text-white">{`Page ${currentPage} of ${totalPages}`}</span>
-                  <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages || loading}
-                    className="px-4 py-2 bg-purple-500 text-white rounded-lg disabled:opacity-50"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-            </div>
-          )
-        )}
-      </div>
+      <section>
+        <h2 className="text-black text-2xl font-semibold mb-3">Pending Bets</h2>
+        {renderBets()}
+      </section>
+
+      {approvalHash && (
+        <div className="mt-5 p-4 bg-gray-100">
+          <p className="text-black">Approval Transaction Hash: {approvalHash}</p>
+          {isApproveConfirming && <p className="text-black">Waiting for approval confirmation...</p>}
+          {isApproveConfirmed && <p className="text-black">Token approved successfully!</p>}
+        </div>
+      )}
+      {approveError && <p className="text-red-500">Approval Error: {approveError.message}</p>}
+
+      {joinGameHash && (
+        <div className="mt-5 p-4 bg-gray-100">
+          <p className="text-black">Join Game Transaction Hash: {joinGameHash}</p>
+          {isJoinConfirming && <p className="text-black">Waiting for confirmation...</p>}
+          {isJoinConfirmed && <p className="text-black">Game joined successfully!</p>}
+        </div>
+      )}
+      {joinError && <p className="text-red-500">Error: {joinError.message}</p>}
+
+      {cancelHash && (
+        <div className="mt-5 p-4 bg-gray-100">
+          <p className="text-black">Cancel Transaction Hash: {cancelHash}</p>
+          {isCancelConfirming && <p className="text-black">Waiting for cancel confirmation...</p>}
+          {isCancelConfirmed && <p className="text-black">Bet canceled successfully!</p>}
+        </div>
+      )}
+      {cancelError && <p className="text-red-500">Cancel Error: {cancelError.message}</p>}
     </div>
   );
 };
 
-export default GameList;
+export default FlipCoinFrontend;

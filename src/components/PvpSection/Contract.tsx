@@ -1,38 +1,5 @@
 export const ABI =[
 	{
-		"inputs": [],
-		"name": "acceptOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			}
-		],
-		"name": "addToken",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "betId",
-				"type": "uint256"
-			}
-		],
-		"name": "cancelBet",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -65,7 +32,7 @@ export const ABI =[
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "requestId",
+				"name": "betId",
 				"type": "uint256"
 			},
 			{
@@ -79,12 +46,6 @@ export const ABI =[
 				"internalType": "address",
 				"name": "player2",
 				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
 			},
 			{
 				"indexed": false,
@@ -112,144 +73,41 @@ export const ABI =[
 			},
 			{
 				"indexed": false,
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			}
-		],
-		"name": "AllGameInfo",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "betId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "BetCanceled",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "betId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "face",
-				"type": "bool"
+				"internalType": "string",
+				"name": "status",
+				"type": "string"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
 				"name": "timeout",
 				"type": "uint256"
-			}
-		],
-		"name": "BetPlaced",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bool",
-				"name": "face",
-				"type": "bool"
 			},
 			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
+				"indexed": false,
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
 			},
 			{
-				"internalType": "uint256",
-				"name": "betTimeout",
-				"type": "uint256"
-			}
-		],
-		"name": "createGame",
-		"outputs": [
+				"indexed": false,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
 			{
+				"indexed": false,
 				"internalType": "uint256",
-				"name": "",
+				"name": "id",
 				"type": "uint256"
 			}
 		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "betId",
-				"type": "uint256"
-			}
-		],
-		"name": "joinGame",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "payable",
-		"type": "function"
+		"name": "AllBets",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
 		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "requestId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "betId",
-				"type": "uint256"
-			},
 			{
 				"indexed": false,
 				"internalType": "address",
@@ -264,12 +122,36 @@ export const ABI =[
 			},
 			{
 				"indexed": false,
+				"internalType": "bool",
+				"name": "playerFace",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "outcome",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "winner",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "status",
+				"type": "string"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint256",
-				"name": "numWords",
+				"name": "payout",
 				"type": "uint256"
 			}
 		],
-		"name": "MatchCreated",
+		"name": "Notification",
 		"type": "event"
 	},
 	{
@@ -311,62 +193,8 @@ export const ABI =[
 		"type": "event"
 	},
 	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "betId",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "bool",
-				"name": "face",
-				"type": "bool"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "timeout",
-				"type": "uint256"
-			}
-		],
-		"name": "PendingBetPlaced",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_requestId",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256[]",
-				"name": "_randomWords",
-				"type": "uint256[]"
-			}
-		],
-		"name": "rawFulfillRandomWords",
+		"inputs": [],
+		"name": "acceptOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -379,58 +207,90 @@ export const ABI =[
 				"type": "address"
 			}
 		],
-		"name": "removeAllowedToken",
+		"name": "addToken",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"inputs": [
+		"inputs": [],
+		"name": "allBets",
+		"outputs": [
 			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
+				"components": [
+					{
+						"internalType": "address",
+						"name": "player1",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "player2",
+						"type": "address"
+					},
+					{
+						"internalType": "address",
+						"name": "token",
+						"type": "address"
+					},
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "player1Face",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "fulfilled",
+						"type": "bool"
+					},
+					{
+						"internalType": "bool",
+						"name": "outcome",
+						"type": "bool"
+					},
+					{
+						"internalType": "uint256",
+						"name": "paid",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "request",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timeout",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "status",
+						"type": "string"
+					},
+					{
+						"internalType": "uint256",
+						"name": "id",
+						"type": "uint256"
+					}
+				],
+				"internalType": "struct FlipCoinPvP.GameMatch[]",
+				"name": "",
+				"type": "tuple[]"
 			}
 		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "view",
 		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newTreasury",
-				"type": "address"
-			}
-		],
-		"name": "updateTreasuryAddress",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "token",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawToken",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"stateMutability": "payable",
-		"type": "receive"
 	},
 	{
 		"inputs": [
@@ -478,8 +338,94 @@ export const ABI =[
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			}
+		],
+		"name": "cancelBet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			}
+		],
+		"name": "claimExpiredBet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bool",
+				"name": "face",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "customTimeout",
+				"type": "uint256"
+			}
+		],
+		"name": "createGame",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
-		"name": "getBalance",
+		"name": "defaultTimeout",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "expireBets",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "gameBetIds",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -494,45 +440,15 @@ export const ABI =[
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "requestId",
+				"name": "",
 				"type": "uint256"
 			}
 		],
-		"name": "getBetStatus",
+		"name": "gameBets",
 		"outputs": [
 			{
-				"internalType": "uint256",
-				"name": "paid",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "fulfilled",
-				"type": "bool"
-			},
-			{
 				"internalType": "address",
-				"name": "player1",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "player2",
-				"type": "address"
-			},
-			{
-				"internalType": "bool",
-				"name": "player1Face",
-				"type": "bool"
-			},
-			{
-				"internalType": "bool",
-				"name": "outcome",
-				"type": "bool"
-			},
-			{
-				"internalType": "address",
-				"name": "winner",
+				"name": "player",
 				"type": "address"
 			},
 			{
@@ -543,6 +459,39 @@ export const ABI =[
 			{
 				"internalType": "uint256",
 				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "face",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timeout",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "status",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
 				"type": "uint256"
 			}
 		],
@@ -564,51 +513,6 @@ export const ABI =[
 	},
 	{
 		"inputs": [],
-		"name": "getPendingBets",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "address",
-						"name": "player",
-						"type": "address"
-					},
-					{
-						"internalType": "address",
-						"name": "token",
-						"type": "address"
-					},
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "bool",
-						"name": "face",
-						"type": "bool"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timeout",
-						"type": "uint256"
-					}
-				],
-				"internalType": "struct FlipCoinPvP.PendingBet[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "i_vrfV2PlusWrapper",
 		"outputs": [
 			{
@@ -618,6 +522,25 @@ export const ABI =[
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "betId",
+				"type": "uint256"
+			}
+		],
+		"name": "joinGame",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -672,6 +595,26 @@ export const ABI =[
 			},
 			{
 				"internalType": "uint256",
+				"name": "request",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timeout",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "status",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
 				"name": "id",
 				"type": "uint256"
 			}
@@ -709,63 +652,31 @@ export const ABI =[
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "_requestId",
 				"type": "uint256"
-			}
-		],
-		"name": "pendingBetIds",
-		"outputs": [
+			},
 			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
+				"internalType": "uint256[]",
+				"name": "_randomWords",
+				"type": "uint256[]"
 			}
 		],
-		"stateMutability": "view",
+		"name": "rawFulfillRandomWords",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "pendingBets",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
 				"internalType": "address",
 				"name": "token",
 				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "face",
-				"type": "bool"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timeout",
-				"type": "uint256"
 			}
 		],
-		"stateMutability": "view",
+		"name": "removeAllowedToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -782,16 +693,29 @@ export const ABI =[
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "timeout",
-		"outputs": [
+		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
+				"internalType": "address",
+				"name": "_newTreasuryAddress",
+				"type": "address"
 			}
 		],
-		"stateMutability": "view",
+		"name": "setTreasuryAddress",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -808,6 +732,37 @@ export const ABI =[
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawNative",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawToken",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "wrapperAddress",
 		"outputs": [
@@ -819,18 +774,20 @@ export const ABI =[
 		],
 		"stateMutability": "view",
 		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ];
 
 
 // src/contracts/FlipGameContract.ts
-export const ADDRESS = "0x51A148d58C906413558B5c9374F90823fB8C5582";
-
-
+export const ADDRESS = "0x5fFD38Ae49a4E5D8e447E00cEFc1bAa0aa827021"; // Replace with your contract address
 
 // Supported tokens -
 export const SUPPORTED_TOKENS = [
-  { symbol: "STABLEAI", address: "0x25e5478cb05bcd84c84fa77105EE44ac073C87fF" },
+  { symbol: "STABLEAI", address: "0x07F41412697D14981e770b6E335051b1231A2bA8" },
   { symbol: "DIG", address: "0x208561379990f106E6cD59dDc14dFB1F290016aF" },
   { symbol: "WEB9", address: "0x09CA293757C6ce06df17B96fbcD9c5f767f4b2E1" },
   { symbol: "BNKR", address: "0x22aF33FE49fD1Fa80c7149773dDe5890D3c76F3b" },
@@ -880,3 +837,25 @@ export const erc20ABI = [
 
 // Rest of your component code remains unchanged...
 
+export const ERC20_ABI = [
+  {
+    constant: false,
+    inputs: [
+      { name: "_spender", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [{ name: "", type: "bool" }],
+    type: "function",
+  },
+  {
+    constant: true,
+    inputs: [
+      { name: "_owner", type: "address" },
+      { name: "_spender", type: "address" },
+    ],
+    name: "allowance",
+    outputs: [{ name: "", type: "uint256" }],
+    type: "function",
+  },
+];

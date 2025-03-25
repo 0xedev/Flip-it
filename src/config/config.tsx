@@ -7,7 +7,7 @@ import { createClient } from "viem";
 
 
 export const wagmiConfig = createConfig({
-  chains: [base],
+  chains: [ base ],
   connectors: [
     farcasterFrame()
    
