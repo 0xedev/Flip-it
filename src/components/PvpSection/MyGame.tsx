@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { useReadContract, useAccount, useWatchContractEvent } from "wagmi";
+import { 
+  useReadContract, 
+  useAccount, 
+  useWatchContractEvent, 
+  useWriteContract 
+} from "wagmi";
 import { formatEther, Address } from "viem";
 import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
 
@@ -44,6 +49,7 @@ export function MyGame() {
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<AllBetsEvent[]>([]);
   const [activeTab, setActiveTab] = useState<"player1" | "player2">("player1");
+  const { writeContract } = useWriteContract();
 
   // Read all bets from the contract
   const { data, refetch, isError, isLoading } = useReadContract({
@@ -79,6 +85,52 @@ export function MyGame() {
       refetch();
     },
   });
+
+  const claimExpiredBet = async (betId: bigint) => {
+    try {
+      await writeContract({
+        address: ADDRESS,
+        abi: ABI,
+        functionName: "claimExpiredBet",
+        args: [betId],
+      });
+      refetch();
+    } catch (error) {
+      console.error("Error claiming expired bet:", error);
+      setError("Failed to claim expired bet");
+    }
+  };
+
+  const cancelBet = async (betId: bigint) => {
+    try {
+      await writeContract({
+        address: ADDRESS,
+        abi: ABI,
+        functionName: "cancelBet",
+        args: [betId],
+      });
+      refetch();
+    } catch (error) {
+      console.error("Error cancelling bet:", error);
+      setError("Failed to cancel bet");
+    }
+  };
+
+  const isClaimable = (bet: GameMatch) => {
+    return (
+      bet.status.toLowerCase() === "expired" &&
+      bet.player1 === address &&
+      (!bet.player2 || bet.player2 === "0x0000000000000000000000000000000000000000")
+    );
+  };
+
+  const isCancellable = (bet: GameMatch) => {
+    return (
+      bet.status.toLowerCase() === "pending" &&
+      bet.player1 === address &&
+      (!bet.player2 || bet.player2 === "0x0000000000000000000000000000000000000000")
+    );
+  };
 
   useEffect(() => {
     if (data && address) {
@@ -161,6 +213,11 @@ export function MyGame() {
           </button>
         </div>
 
+        <div className="text-sm text-gray-500 mb-4">
+          <p>• <span className="font-medium">Cancel</span>: Available for your pending bets that haven't been matched</p>
+          <p>• <span className="font-medium">Claim</span>: Available when your unmatched bet expires</p>
+        </div>
+
         {/* Tab Navigation */}
         <div className="flex mb-4 border-b">
           <button
@@ -206,6 +263,7 @@ export function MyGame() {
                     "Status",
                     "Outcome",
                     "Winner",
+                    "Actions"
                   ].map((header) => (
                     <th
                       key={header}
@@ -225,6 +283,8 @@ export function MyGame() {
                         ? "bg-green-50"
                         : bet.status.toLowerCase() === "pending"
                         ? "bg-yellow-50"
+                        : bet.status.toLowerCase() === "expired"
+                        ? "bg-red-50"
                         : ""
                     }`}
                   >
@@ -246,7 +306,16 @@ export function MyGame() {
                     <td className="px-4 py-4">
                       {bet.player1Face ? "Heads" : "Tails"}
                     </td>
-                    <td className="px-4 py-4">{bet.status}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col">
+                        <span>{bet.status}</span>
+                        {bet.status.toLowerCase() === "pending" && (
+                          <span className="text-xs text-gray-500">
+                            {getRemainingTime(bet.timestamp, bet.timeout)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-4 py-4">
                       {bet.fulfilled
                         ? bet.outcome
@@ -273,10 +342,31 @@ export function MyGame() {
                             </div>
                           )}
                         </div>
-                      ) : bet.status === "Fulfilled" ? (
+                      ) : bet.status.toLowerCase() === "fulfilled" ? (
                         "Calculating..."
                       ) : (
                         "-"
+                      )}
+                    </td>
+                    <td className="px-4 py-4 space-x-2">
+                      {/* Cancel button for pending bets */}
+                      {isCancellable(bet) && (
+                        <button
+                          onClick={() => cancelBet(bet.betId)}
+                          className="px-3 py-1 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-sm"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                      
+                      {/* Claim button for expired bets */}
+                      {isClaimable(bet) && (
+                        <button
+                          onClick={() => claimExpiredBet(bet.betId)}
+                          className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors text-sm"
+                        >
+                          Claim
+                        </button>
                       )}
                     </td>
                   </tr>
@@ -349,7 +439,7 @@ export function MyGame() {
                           </span>
                         )}
                       </p>
-                    ) : event.status === "Fulfilled" ? (
+                    ) : event.status.toLowerCase() === "fulfilled" ? (
                       <p>Winner: Being calculated...</p>
                     ) : null}
                   </div>
@@ -365,6 +455,7 @@ export function MyGame() {
   );
 }
 
+// Helper functions
 function shortenAddress(address: Address): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
@@ -373,5 +464,19 @@ function getTokenSymbol(tokenAddress: Address): string {
   const token = SUPPORTED_TOKENS.find((t) => t.address === tokenAddress);
   return token ? token.symbol : "Unknown";
 }
+function getRemainingTime(timestamp: bigint, timeout: bigint): string {
+  const now = Math.floor(Date.now() / 1000);
+  const endTime = Number(timestamp) + Number(timeout);
+  const remaining = endTime - now;
+  return remaining > 0 ? formatTimeout(BigInt(remaining)) : "Expired";
+}
+function formatTimeout(timeout: bigint): string {
+  const seconds = Number(timeout);
+  if (seconds < 60) return `${seconds} seconds`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} minutes`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hours`;
+  return `${Math.floor(seconds / 86400)} days`;
+}
+
 
 export default MyGame;
