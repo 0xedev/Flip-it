@@ -15,7 +15,7 @@ const Pvc = () => {
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
         {/* Header with Back Button and Title */}
-        <header className="flex items-center space-x-6 mb-12">
+        <header className="flex items-center space-x-6 mb-4">
           <button
             onClick={() => navigate("/")}
             className="group flex items-center justify-center w-12 h-12 bg-purple-800/30 hover:bg-purple-800/50 rounded-full transition-all duration-300 border border-purple-700/30"
@@ -33,7 +33,7 @@ const Pvc = () => {
         </header>
 
         {/* Main Content */}
-        <main className="bg-purple-900/30 border border-purple-800/30 rounded-xl backdrop-blur-sm p-8">
+        <main className="bg-purple-900/30 border border-purple-800/30 rounded-xl backdrop-blur-sm p-2">
           <Create />
         </main>
       </div>

@@ -146,7 +146,7 @@ const Pvp = () => {
         </header>
 
         {/* Main Content */}
-        <main className="px-6 py-8">
+        <main className="px-2 py-6">
           {/* Quick Action Buttons */}
           <div className="grid grid-cols-3 gap-6 mb-10">
             <button
@@ -175,7 +175,7 @@ const Pvp = () => {
           </div>
 
           {/* Game List Section */}
-          <div className="bg-purple-900/30 border border-purple-800/30 rounded-xl backdrop-blur-sm p-6">
+          <div className="bg-purple-900/30 border border-purple-800/30 rounded-xl backdrop-blur-sm p-2">
             <h2 className="text-2xl font-bold text-purple-200 mb-6">
               Available Games
             </h2>
@@ -188,7 +188,7 @@ const Pvp = () => {
       {isWalletModalOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
           <div className="bg-white/10 border border-purple-700/30 rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="p-6 border-b border-purple-700/30">
+            <div className="p-3 border-b border-purple-700/30">
               <h3 className="text-center text-2xl font-bold text-purple-100">
                 Connect Wallet
               </h3>

@@ -192,7 +192,7 @@ const LeaderBoard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("all-bets");
   const [selectedToken, setSelectedToken] = useState<string>("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 7;
 
   const { address } = useAccount();
 

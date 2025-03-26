@@ -322,15 +322,15 @@ const FlipCoinFrontend = () => {
         </div>
       )}
 
-      <h1 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center">
+      {/* <h1 className="text-black text-xl sm:text-2xl font-bold mb-4 text-center">
         Flip Coin PvP
-      </h1>
+      </h1> */}
 
       {/* Pending Bets Table */}
       <section className="mt-2">
-        <h2 className="text-black text-lg sm:text-xl font-semibold mb-3 text-center">
+        {/* <h2 className="text-black text-lg sm:text-xl font-semibold mb-3 text-center">
           Pending Bets
-        </h2>
+        </h2> */}
         {pendingBets.length === 0 ? (
           <p className="text-black text-center">No pending bets available.</p>
         ) : (
