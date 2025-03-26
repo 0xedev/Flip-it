@@ -31,11 +31,8 @@ const FlipCoinFrontend = () => {
     functionName: "allBets",
   });
 
-  const {
-    writeContract: writeApprove,
-    isPending: isApproving,
-    error: approveError,
-  } = useWriteContract();
+  const { writeContract: writeApprove, error: approveError } =
+    useWriteContract();
 
   const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } =
     useWaitForTransactionReceipt({
@@ -70,7 +67,7 @@ const FlipCoinFrontend = () => {
     address: ADDRESS as Address,
     abi: ABI,
     eventName: "AllBets",
-    onLogs(logs) {
+    onLogs() {
       refetchAllBets();
     },
   });
@@ -81,8 +78,17 @@ const FlipCoinFrontend = () => {
     eventName: "Notification",
     onLogs(logs: any[]) {
       logs.forEach((log) => {
-        const { player1, player2, winner, status, payout, playerFace, outcome, betId } = log.args;
-        
+        const {
+          player1,
+          player2,
+          winner,
+          status,
+          payout,
+          playerFace,
+          outcome,
+          betId,
+        } = log.args;
+
         if (status === "Fulfilled" && Number(betId) === joiningBetId) {
           setJoinComplete(true);
           setJoiningBetId(null);
@@ -90,23 +96,28 @@ const FlipCoinFrontend = () => {
 
         const face = playerFace ? "Heads" : "Tails";
         const result = outcome ? "Heads" : "Tails";
-        const message = status === "Fulfilled" 
-          ? `Game resolved! Bet was ${face}, result was ${result}. Winner: ${
-              winner === userAddress ? "You" : winner.slice(0, 6) + "..." + winner.slice(-4)
-            }`
-          : `Game status updated: ${status}`;
+        const message =
+          status === "Fulfilled"
+            ? `Game resolved! Bet was ${face}, result was ${result}. Winner: ${
+                winner === userAddress
+                  ? "You"
+                  : winner.slice(0, 6) + "..." + winner.slice(-4)
+              }`
+            : `Game status updated: ${status}`;
 
-        setNotifications((prev) => [
-          {
-            message,
-            player1,
-            player2,
-            winner,
-            payout: formatEther(payout),
-            timestamp: Date.now(),
-          },
-          ...prev,
-        ].slice(0, 10));
+        setNotifications((prev) =>
+          [
+            {
+              message,
+              player1,
+              player2,
+              winner,
+              payout: formatEther(payout),
+              timestamp: Date.now(),
+            },
+            ...prev,
+          ].slice(0, 10)
+        );
       });
     },
   });
@@ -117,7 +128,7 @@ const FlipCoinFrontend = () => {
       const now = Math.floor(Date.now() / 1000);
       const sortedBets = [...(allBetsData as any[])]
         .sort((a, b) => Number(b.id) - Number(a.id))
-        .filter(bet => {
+        .filter((bet) => {
           if (bet.status !== "Pending") return false;
           const endTime = Number(bet.timestamp) + Number(bet.timeout);
           return endTime > now;
@@ -137,9 +148,10 @@ const FlipCoinFrontend = () => {
             abi: ABI,
             functionName: "joinGame",
             args: [selectedBetId],
-            value: bet.token === "0x0000000000000000000000000000000000000000" 
-              ? bet.amount 
-              : BigInt(0),
+            value:
+              bet.token === "0x0000000000000000000000000000000000000000"
+                ? bet.amount
+                : BigInt(0),
           });
         }, 500);
       }
@@ -172,7 +184,7 @@ const FlipCoinFrontend = () => {
   // Action handlers
   const handleJoinGame = async (betId: number) => {
     if (!userAddress) return alert("Please connect your wallet!");
-    
+
     const bet = allBets.find((b) => Number(b.id) === betId);
     if (!bet) return alert("Bet not found!");
 
@@ -180,7 +192,7 @@ const FlipCoinFrontend = () => {
 
     if (bet.token !== "0x0000000000000000000000000000000000000000") {
       setApproving(true);
-      
+
       const approvalSuccess = await new Promise<boolean>((resolve) => {
         writeApprove(
           {
@@ -233,9 +245,10 @@ const FlipCoinFrontend = () => {
       abi: ABI,
       functionName: "joinGame",
       args: [betId],
-      value: bet.token === "0x0000000000000000000000000000000000000000" 
-        ? bet.amount 
-        : BigInt(0),
+      value:
+        bet.token === "0x0000000000000000000000000000000000000000"
+          ? bet.amount
+          : BigInt(0),
     });
   };
 
@@ -257,20 +270,23 @@ const FlipCoinFrontend = () => {
   };
 
   // Components
-  const LoadingModal = () => (
+  const LoadingModal = () =>
     joiningBetId && !joinComplete ? (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg max-w-md w-full">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1">Processing Game</h3>
-            <p className="text-sm text-gray-500">Waiting for game resolution...</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">
+              Processing Game
+            </h3>
+            <p className="text-sm text-gray-500">
+              Waiting for game resolution...
+            </p>
             <p className="text-xs text-gray-400 mt-2">Bet ID: {joiningBetId}</p>
           </div>
         </div>
       </div>
-    ) : null
-  );
+    ) : null;
 
   const Notification = ({ message, timestamp, payout }: any) => (
     <div className="bg-white p-4 mb-2 rounded-lg shadow-lg border-l-4 border-green-500 animate-fadeIn">
@@ -295,7 +311,7 @@ const FlipCoinFrontend = () => {
   return (
     <div className="p-4 w-full max-w-[614px] mx-auto bg-gray-50">
       <LoadingModal />
-      
+
       {/* Notifications */}
       {notifications.length > 0 && (
         <div className="fixed top-5 right-5 z-50 max-w-xs">
@@ -305,11 +321,15 @@ const FlipCoinFrontend = () => {
         </div>
       )}
 
-      <h1 className="text-black text-2xl font-bold mb-4 text-center">Flip Coin PvP</h1>
+      <h1 className="text-black text-2xl font-bold mb-4 text-center">
+        Flip Coin PvP
+      </h1>
 
       {/* Pending Bets Table */}
       <section>
-        <h2 className="text-black text-xl font-semibold mb-3 text-center">Pending Bets</h2>
+        <h2 className="text-black text-xl font-semibold mb-3 text-center">
+          Pending Bets
+        </h2>
         {pendingBets.length === 0 ? (
           <p className="text-black text-center">No pending bets available.</p>
         ) : (
@@ -323,32 +343,41 @@ const FlipCoinFrontend = () => {
                     <th className="p-2">Amount</th>
                     <th className="p-2">Token</th>
                     <th className="p-2">Face</th>
-                    <th className="p-2">Timeout</th>
+                    {/* <th className="p-2">Timeout</th> */}
                     <th className="p-2">Time Left</th>
                     <th className="p-2">Action</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentBets.map((bet) => {
-                    const isExpired = getRemainingTime(bet.timestamp, bet.timeout) === "Expired";
+                    const isExpired =
+                      getRemainingTime(bet.timestamp, bet.timeout) ===
+                      "Expired";
                     const isCreator = bet.player1 === userAddress;
-                    const isCanceling = cancelingBetId === Number(bet.id) && isCancelPending;
-                    const isProcessing = (approving || isJoining) && selectedBetId === Number(bet.id);
+                    const isCanceling =
+                      cancelingBetId === Number(bet.id) && isCancelPending;
+                    const isProcessing =
+                      (approving || isJoining) &&
+                      selectedBetId === Number(bet.id);
 
                     return (
                       <tr key={Number(bet.id)} className="border-b">
                         <td className="p-2 text-center">{Number(bet.id)}</td>
                         <td className="p-2 text-center">
-                          {bet.player1.slice(0, 4)}...{bet.player1.slice(-4)}
+                          {bet.player1.slice(0, 2)}...{bet.player1.slice(-4)}
                         </td>
                         <td className="p-2 text-center">
                           {parseFloat(formatEther(bet.amount)).toFixed(2)}
                         </td>
-                        <td className="p-2 text-center">{getTokenSymbol(bet.token)}</td>
+                        <td className="p-2 text-center">
+                          {getTokenSymbol(bet.token)}
+                        </td>
                         <td className="p-2 text-center">
                           {bet.player1Face ? "Heads" : "Tails"}
                         </td>
-                        <td className="p-2 text-center">{formatTimeout(bet.timeout)}</td>
+                        {/* <td className="p-2 text-center">
+                          {formatTimeout(bet.timeout)}
+                        </td> */}
                         <td className="p-2 text-center">
                           {getRemainingTime(bet.timestamp, bet.timeout)}
                         </td>
@@ -363,16 +392,22 @@ const FlipCoinFrontend = () => {
                                 {isCanceling ? "Canceling..." : "Cancel"}
                               </button>
                             ) : (
-                              <span className="text-gray-500 text-xs">Expired</span>
+                              <span className="text-gray-500 text-xs">
+                                Expired
+                              </span>
                             )
                           ) : (
                             <button
                               onClick={() => handleJoinGame(Number(bet.id))}
-                              disabled={isProcessing || bet.player1 === userAddress}
+                              disabled={
+                                isProcessing || bet.player1 === userAddress
+                              }
                               className="bg-blue-500 text-white px-2 py-1 rounded-md text-xs w-full"
                             >
                               {isProcessing
-                                ? approving ? "Approving..." : "Joining..."
+                                ? approving
+                                  ? "Approving..."
+                                  : "Joining..."
                                 : "Join"}
                             </button>
                           )}
@@ -387,7 +422,9 @@ const FlipCoinFrontend = () => {
             {totalPages > 1 && (
               <div className="mt-4 flex flex-wrap justify-center gap-2 text-black">
                 <button
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
                   disabled={currentPage === 1}
                   className="bg-gray-500 text-white px-3 py-1 rounded-md text-sm"
                 >
@@ -417,9 +454,12 @@ const FlipCoinFrontend = () => {
           {approvalHash && (
             <>
               <p className="text-black break-words">
-                Approval Tx: {approvalHash.slice(0, 6)}...{approvalHash.slice(-4)}
+                Approval Tx: {approvalHash.slice(0, 6)}...
+                {approvalHash.slice(-4)}
               </p>
-              {isApproveConfirming && <p className="text-black">Approving...</p>}
+              {isApproveConfirming && (
+                <p className="text-black">Approving...</p>
+              )}
               {isApproveConfirmed && <p className="text-black">Approved!</p>}
             </>
           )}
@@ -447,7 +487,8 @@ const FlipCoinFrontend = () => {
       {/* Error Messages */}
       {(approveError || joinError || cancelError) && (
         <p className="text-red-500 text-sm mt-2 break-words">
-          Error: {(approveError || joinError || cancelError)?.message.slice(0, 50)}...
+          Error:{" "}
+          {(approveError || joinError || cancelError)?.message.slice(0, 50)}...
         </p>
       )}
     </div>
