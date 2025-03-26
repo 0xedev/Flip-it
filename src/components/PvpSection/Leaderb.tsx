@@ -5,7 +5,7 @@ import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
 
 const Leaderb = () => {
   const { address } = useAccount();
-  
+
   interface Bet {
     id: string;
     betId: string;
@@ -71,7 +71,7 @@ const Leaderb = () => {
           const timestamp = Number(bet.timestamp);
           const timeout = Number(bet.timeout);
           const isExpired = getRemainingTime(timestamp, timeout) === "Expired";
-          
+
           return {
             id: bet.id.toString(),
             betId: bet.betId.toString(),
@@ -82,22 +82,23 @@ const Leaderb = () => {
             player1Face: bet.player1Face ? "Heads" : "Tails",
             outcome: bet.outcome ? "Heads" : "Tails",
             winner: bet.winner,
-            status: isExpired && bet.status.toLowerCase() === "pending" 
-              ? "Expired" 
-              : bet.status,
+            status:
+              isExpired && bet.status.toLowerCase() === "pending"
+                ? "Expired"
+                : bet.status,
             timestamp: timestamp.toString(),
             timeout: timeout.toString(),
             fulfilled: bet.fulfilled,
             payout: bet.payout ? formatEther(bet.payout) : "0",
-            remainingTime: getRemainingTime(timestamp, timeout)
+            remainingTime: getRemainingTime(timestamp, timeout),
           };
         });
-        
+
         // Sort bets by betId in descending order (newest first)
-        const sorted = [...formattedBets].sort((a, b) => 
-          parseInt(b.betId) - parseInt(a.betId)
+        const sorted = [...formattedBets].sort(
+          (a, b) => parseInt(b.betId) - parseInt(a.betId)
         );
-        
+
         setBets(sorted);
         setLoading(false);
       } catch (err) {
@@ -117,39 +118,45 @@ const Leaderb = () => {
   // Optimized remaining time update effect
   useEffect(() => {
     const updateRemainingTimes = () => {
-      setBets(prevBets => {
+      setBets((prevBets) => {
         // Only update if there are pending/active bets
-        const hasPendingBets = prevBets.some(bet => 
-          bet.status.toLowerCase() === 'pending' || bet.status.toLowerCase() === 'active'
+        const hasPendingBets = prevBets.some(
+          (bet) =>
+            bet.status.toLowerCase() === "pending" ||
+            bet.status.toLowerCase() === "active"
         );
-        
+
         if (!hasPendingBets) return prevBets;
-  
-        return prevBets.map(bet => {
+
+        return prevBets.map((bet) => {
           // Only update for pending/active bets
-          if (bet.status.toLowerCase() === 'pending' || bet.status.toLowerCase() === 'active') {
+          if (
+            bet.status.toLowerCase() === "pending" ||
+            bet.status.toLowerCase() === "active"
+          ) {
             const timestamp = Number(bet.timestamp);
             const timeout = Number(bet.timeout);
             const remainingTime = getRemainingTime(timestamp, timeout);
             const isExpired = remainingTime === "Expired";
-            
+
             return {
               ...bet,
               remainingTime: remainingTime,
               // Update status if expired
-              status: isExpired && bet.status.toLowerCase() === "pending" 
-                ? "Expired" 
-                : bet.status
+              status:
+                isExpired && bet.status.toLowerCase() === "pending"
+                  ? "Expired"
+                  : bet.status,
             };
           }
           return bet;
         });
       });
     };
-  
+
     // Initial update
     updateRemainingTimes();
-    
+
     // Set up interval
     const interval = setInterval(updateRemainingTimes, 1000);
     return () => clearInterval(interval);
@@ -221,9 +228,10 @@ const Leaderb = () => {
   };
 
   const renderStatus = (status: string, remainingTime: string) => {
-    const isActuallyExpired = remainingTime === "Expired" && status.toLowerCase() === "pending";
+    const isActuallyExpired =
+      remainingTime === "Expired" && status.toLowerCase() === "pending";
     const displayStatus = isActuallyExpired ? "Expired" : status;
-      
+
     return (
       <span
         className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
@@ -237,11 +245,11 @@ const Leaderb = () => {
 
   const getTimeColor = (remainingTime: string) => {
     if (remainingTime === "Expired") return "text-red-600";
-    
+
     // Extract the largest time unit
     if (remainingTime.includes("days")) return "text-green-600";
     if (remainingTime.includes("hours")) {
-      const hours = parseInt(remainingTime.split(' ')[0]);
+      const hours = parseInt(remainingTime.split(" ")[0]);
       return hours > 1 ? "text-green-600" : "text-yellow-600";
     }
     return "text-red-600";
@@ -258,124 +266,147 @@ const Leaderb = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">All Bets</h2>
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-7xl">
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+          All Bets
+        </h2>
         <button
           onClick={() => refetch()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
           Refresh Bets
         </button>
       </div>
 
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Bet ID
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Players
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Choice
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Time Left
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Outcome
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Winner
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {sortedBets.length > 0 ? (
-              sortedBets.map((bet) => {
-                
-                return (
+      <div className="overflow-hidden bg-white rounded-lg shadow">
+        <div className="overflow-x-auto -mx-4 sm:mx-0">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  ID
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Players
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Choice
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Time Left
+                </th>
+                <th className="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Outcome
+                </th>
+                <th className="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Winner
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {sortedBets.length > 0 ? (
+                sortedBets.map((bet) => (
                   <tr key={bet.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm font-medium text-gray-900">
                       #{bet.betId}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>
-                        <span className={bet.player1 === address ? "font-bold text-blue-600" : ""}>
+                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                        <span
+                          className={
+                            bet.player1 === address
+                              ? "font-bold text-blue-600"
+                              : ""
+                          }
+                        >
                           {formatAddress(bet.player1)}
                         </span>
-                        <span className="mx-1">vs</span>
-                        <span className={bet.player2 === address ? "font-bold text-blue-600" : ""}>
-                          {bet.player2 ? formatAddress(bet.player2) : "Waiting..."}
+                        <span className="hidden sm:inline">vs</span>
+                        <span
+                          className={
+                            bet.player2 === address
+                              ? "font-bold text-blue-600"
+                              : ""
+                          }
+                        >
+                          {bet.player2
+                            ? formatAddress(bet.player2)
+                            : "Waiting..."}
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {bet.amount} {getTokenSymbol(bet.token)}
+                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500">
+                      <span className="whitespace-nowrap">
+                        {bet.amount} {getTokenSymbol(bet.token)}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500">
                       {bet.player1Face}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-3 sm:px-6 py-3">
                       {renderStatus(bet.status, bet.remainingTime || "")}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-3 text-xs sm:text-sm">
                       <span className={getTimeColor(bet.remainingTime || "")}>
-                        {bet.status.toLowerCase() === "pending" || bet.status.toLowerCase() === "active" 
-                          ? bet.remainingTime 
+                        {bet.status.toLowerCase() === "pending" ||
+                        bet.status.toLowerCase() === "active"
+                          ? bet.remainingTime
                           : "Completed"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="hidden sm:table-cell px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500">
                       {bet.fulfilled ? bet.outcome : "Pending"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-3 sm:px-6 py-3 text-xs sm:text-sm text-gray-500">
                       {renderWinner(bet)}
                     </td>
                   </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500">
-                  No bets found
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-3 sm:px-6 py-4 text-center text-sm text-gray-500"
+                  >
+                    No bets found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Pagination */}
+      {/* Responsive Pagination */}
       {bets.length > betsPerPage && (
-        <div className="flex justify-center mt-6">
-          <nav className="inline-flex rounded-md shadow">
+        <div className="flex justify-center mt-4 sm:mt-6">
+          <nav className="inline-flex flex-wrap justify-center gap-1 rounded-md shadow">
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded-l-md border border-gray-300 ${
-                currentPage === 1 ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
+              className={`px-2 sm:px-3 py-1 text-sm rounded-md border border-gray-300 ${
+                currentPage === 1
+                  ? "bg-gray-100 text-gray-400"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
-              Previous
+              Prev
             </button>
             {pageNumbers.map((number) => (
               <button
                 key={number}
                 onClick={() => paginate(number)}
-                className={`px-3 py-1 border-t border-b border-gray-300 ${
-                  currentPage === number 
-                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                className={`px-2 sm:px-3 py-1 text-sm rounded-md border border-gray-300 ${
+                  currentPage === number
+                    ? "bg-blue-50 text-blue-600 border-blue-200"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 {number}
@@ -384,10 +415,10 @@ const Leaderb = () => {
             <button
               onClick={nextPage}
               disabled={currentPage === pageNumbers.length}
-              className={`px-3 py-1 rounded-r-md border border-gray-300 ${
-                currentPage === pageNumbers.length 
-                  ? 'bg-gray-100 text-gray-400' 
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              className={`px-2 sm:px-3 py-1 text-sm rounded-md border border-gray-300 ${
+                currentPage === pageNumbers.length
+                  ? "bg-gray-100 text-gray-400"
+                  : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
               Next
