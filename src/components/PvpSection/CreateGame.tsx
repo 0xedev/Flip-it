@@ -271,7 +271,7 @@ const CreateGameForm: React.FC = () => {
     : "";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-6 px-4 sm:px-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-4 px-4 sm:px-6">
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2220%22 height=%2220%22 viewBox=%220 0 20 20%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M10 10h.01%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E')] opacity-10 pointer-events-none"></div>
