@@ -271,17 +271,17 @@ const CreateGameForm: React.FC = () => {
     : "";
 
   return (
-    <div className=" bg-gradient-to-br from-gray-100 to-gray-200 py-4 px-4 sm:px-6">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6 relative overflow-hidden">
+    <div className="bg-gradient-to-br from-gray-100 to-gray-200 py-2 px-2 sm:py-4 sm:px-6">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-3 sm:p-6 relative overflow-hidden max-h-[80vh] sm:max-h-none overflow-y-auto">
         {/* Background pattern */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2220%22 height=%2220%22 viewBox=%220 0 20 20%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M10 10h.01%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E')] opacity-10 pointer-events-none"></div>
 
         {/* Progress Stepper */}
-        <div className="flex justify-between mb-4 sm:mb-6 relative z-10">
+        <div className="flex justify-between mb-3 sm:mb-6 relative z-10">
           {["Prepare", "Approve", "Create"].map((step, idx) => (
             <div key={step} className="flex flex-col items-center">
               <div
-                className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                className={`w-5 h-5 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
                   currentStep === step.toLowerCase()
                     ? "bg-blue-600 text-white"
                     : idx <
@@ -298,8 +298,8 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2">
-          <h2 className="text-lg sm:text-xl font-bold text-gray-800">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-3 sm:mb-6 gap-2">
+          <h2 className="text-base sm:text-xl font-bold text-gray-800">
             Create Game
           </h2>
           <div className="flex items-center gap-2">
@@ -308,7 +308,7 @@ const CreateGameForm: React.FC = () => {
             </span>
             <button
               onClick={() => setShowTour(true)}
-              className="text-blue-600 hover:text-blue-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 rounded"
+              className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 rounded"
               aria-label="Show first time tour"
             >
               First time?
@@ -317,15 +317,15 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Balance Display */}
-        <div className="text-center mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg shadow-inner">
+        <div className="text-center mb-3 sm:mb-6 p-2 sm:p-4 bg-gray-50 rounded-lg shadow-inner">
           {isLoadingBalance || isLoading ? (
             <span className="text-gray-500 animate-pulse">Loading...</span>
           ) : (
             <>
-              <span className="text-xl sm:text-2xl font-semibold text-gray-800">
+              <span className="text-lg sm:text-2xl font-semibold text-gray-800">
                 {parseFloat(formattedBalance).toFixed(2)}
               </span>
-              <span className="ml-2 text-gray-600 text-sm sm:text-base">
+              <span className="ml-2 text-gray-600 text-xs sm:text-base">
                 {tokenSymbol}
               </span>
             </>
@@ -333,8 +333,8 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Heads/Tails */}
-        <div className="mb-4 sm:mb-6">
-          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
+        <div className="mb-3 sm:mb-6">
+          <label className="flex items-center justify-between text-xs sm:text-sm font-medium text-gray-800 mb-2">
             Choose Side
             <span
               className="text-xs text-gray-500 cursor-help"
@@ -345,7 +345,7 @@ const CreateGameForm: React.FC = () => {
           </label>
           <div ref={coinRef} className="grid grid-cols-2 gap-2 sm:gap-4">
             <button
-              className={`p-3 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[80px] sm:min-h-[100px] ${
+              className={`p-2 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[60px] sm:min-h-[100px] ${
                 face
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-gray-100 hover:bg-gray-200"
@@ -354,13 +354,13 @@ const CreateGameForm: React.FC = () => {
               aria-label="Bet on Heads"
               aria-pressed={face}
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-800 mb-2">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-base sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">
                 H
               </div>
-              <span className="text-sm">Heads</span>
+              <span className="text-xs sm:text-sm">Heads</span>
             </button>
             <button
-              className={`p-3 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[80px] sm:min-h-[100px] ${
+              className={`p-2 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[60px] sm:min-h-[100px] ${
                 !face
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-gray-100 hover:bg-gray-200"
@@ -369,17 +369,17 @@ const CreateGameForm: React.FC = () => {
               aria-label="Bet on Tails"
               aria-pressed={!face}
             >
-              <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-800 mb-2">
+              <div className="w-8 h-8 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-base sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">
                 T
               </div>
-              <span className="text-sm">Tails</span>
+              <span className="text-xs sm:text-sm">Tails</span>
             </button>
           </div>
         </div>
 
         {/* Token Selection */}
-        <div className="text-black mb-4 sm:mb-6">
-          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
+        <div className="text-black mb-3 sm:mb-6">
+          <label className="flex items-center justify-between text-xs sm:text-sm font-medium text-gray-800 mb-2">
             Token
             <span
               className="text-xs text-gray-500 cursor-help"
@@ -392,7 +392,7 @@ const CreateGameForm: React.FC = () => {
             {SUPPORTED_TOKENS.map((token) => (
               <button
                 key={token.symbol}
-                className={`p-2 sm:p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[60px] sm:min-h-[80px] ${
+                className={`p-2 sm:p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[50px] sm:min-h-[80px] ${
                   tokenSymbol === token.symbol
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:bg-gray-50"
@@ -407,7 +407,7 @@ const CreateGameForm: React.FC = () => {
                     "https://flip-it-clanker.vercel.app/icon.svg"
                   }
                   alt={`${token.symbol} icon`}
-                  className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1"
+                  className="w-4 h-4 sm:w-6 sm:h-6 mx-auto mb-1"
                 />
                 <span className="text-xs sm:text-sm">{token.symbol}</span>
               </button>
@@ -416,8 +416,8 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Bet Amount */}
-        <div className="mb-4 text-black sm:mb-6">
-          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
+        <div className="mb-3 text-black sm:mb-6">
+          <label className="flex items-center justify-between text-xs sm:text-sm font-medium text-gray-800 mb-2">
             Bet Amount
             <span
               className="text-xs text-gray-500 cursor-help"
@@ -430,7 +430,7 @@ const CreateGameForm: React.FC = () => {
             {betPresets.map((preset) => (
               <button
                 key={preset.label}
-                className={`p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                className={`p-1 sm:p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
                   parseFloat(amount) === (maxBet * preset.percent) / 100
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 hover:bg-gray-200"
@@ -448,14 +448,14 @@ const CreateGameForm: React.FC = () => {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="flex-1 p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base"
+              className="flex-1 p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs sm:text-base"
               step="0.01"
               min="0"
               max={maxBet}
               disabled={isPending}
               aria-label="Bet amount"
             />
-            <span className="p-2 bg-gray-100 rounded-r-lg text-gray-700 text-sm sm:text-base">
+            <span className="p-2 bg-gray-100 rounded-r-lg text-gray-700 text-xs sm:text-base">
               {tokenSymbol}
             </span>
           </div>
@@ -482,9 +482,9 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Timeout */}
-        <div className="mb-4 text-black sm:mb-6">
+        <div className="mb-3 text-black sm:mb-6">
           <button
-            className="flex justify-between w-full text-sm font-medium text-gray-800 mb-2 focus:outline-none"
+            className="flex justify-between w-full text-xs sm:text-sm font-medium text-gray-800 mb-2 focus:outline-none"
             onClick={() => setShowAdvanced(!showAdvanced)}
             aria-expanded={showAdvanced}
           >
@@ -502,7 +502,7 @@ const CreateGameForm: React.FC = () => {
                 {timeoutOptions.map((option) => (
                   <button
                     key={option.value}
-                    className={`p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                    className={`p-1 sm:p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
                       betTimeout === option.value
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 hover:bg-gray-200"
@@ -517,7 +517,7 @@ const CreateGameForm: React.FC = () => {
                 type="number"
                 value={betTimeout}
                 onChange={(e) => setBetTimeout(parseInt(e.target.value))}
-                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base"
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs sm:text-base"
                 min="1"
                 disabled={isPending}
                 aria-label="Timeout in seconds"
@@ -534,7 +534,7 @@ const CreateGameForm: React.FC = () => {
           <button
             onClick={() => handleCreateGame(true)}
             disabled={isPending || isLoadingBalance}
-            className={`p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-green-300 text-sm sm:text-base ${
+            className={`p-2 sm:p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-green-300 text-xs sm:text-base ${
               isPending
                 ? "bg-gray-400"
                 : "bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5"
@@ -544,7 +544,10 @@ const CreateGameForm: React.FC = () => {
           >
             {isPending && currentStep === "approve" ? (
               <span className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                <svg
+                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
+                  viewBox="0 0 24 24"
+                >
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -568,7 +571,7 @@ const CreateGameForm: React.FC = () => {
           <button
             onClick={() => handleCreateGame()}
             disabled={isPending || isLoadingBalance}
-            className={`p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base ${
+            className={`p-2 sm:p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs sm:text-base ${
               isPending
                 ? "bg-gray-400"
                 : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5"
@@ -577,7 +580,10 @@ const CreateGameForm: React.FC = () => {
           >
             {isPending ? (
               <span className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                <svg
+                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
+                  viewBox="0 0 24 24"
+                >
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -603,7 +609,7 @@ const CreateGameForm: React.FC = () => {
         {/* Toast */}
         {toast && (
           <div
-            className={`fixed bottom-4 left-4 right-4 sm:max-w-sm sm:mx-auto p-4 rounded-lg shadow-lg text-white animate-fade-in text-sm ${
+            className={`fixed bottom-4 left-4 right-4 sm:max-w-sm sm:mx-auto p-3 sm:p-4 rounded-lg shadow-lg text-white animate-fade-in text-xs sm:text-sm ${
               toast.type === "success"
                 ? "bg-green-600"
                 : toast.type === "error"
@@ -625,9 +631,11 @@ const CreateGameForm: React.FC = () => {
         {/* Guided Tour Modal */}
         {showTour && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-4 sm:p-6 rounded-lg max-w-md w-11/12">
-              <h3 className="text-lg font-bold mb-4">Welcome to Coin Flip!</h3>
-              <p className="text-gray-700 mb-4 text-sm sm:text-base">
+            <div className="bg-white p-3 sm:p-6 rounded-lg max-w-md w-11/12">
+              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">
+                Welcome to Coin Flip!
+              </h3>
+              <p className="text-gray-700 mb-3 sm:mb-4 text-xs sm:text-base">
                 1. Choose Heads or Tails
                 <br />
                 2. Select your token and amount
@@ -638,7 +646,7 @@ const CreateGameForm: React.FC = () => {
               </p>
               <button
                 onClick={() => setShowTour(false)}
-                className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm sm:text-base"
+                className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-base"
               >
                 Got it!
               </button>
