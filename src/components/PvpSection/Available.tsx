@@ -269,7 +269,7 @@ const FlipCoinFrontend = () => {
 
   const NotificationPopup = () => {
     if (!currentNotification) return null;
-
+  
     const isWinner = currentNotification.winner.toLowerCase() === userAddress?.toLowerCase();
     const token = SUPPORTED_TOKENS.find(
       t => t.address.toLowerCase() === currentNotification.token.toLowerCase()
@@ -277,67 +277,194 @@ const FlipCoinFrontend = () => {
       symbol: currentNotification.token.slice(0, 6) + "..." + currentNotification.token.slice(-4), 
       decimals: 18 
     };
-
+  
+    const handleShare = async (platform: "X" | "warpcast" | "copy") => {
+      const message = generateShareMessage(platform);
+      switch (platform) {
+        case "X":
+          window.open(
+            `https://X.com/intent/tweet?text=${encodeURIComponent(message)}`,
+            "_blank"
+          );
+          break;
+        case "warpcast":
+          window.open(
+            `https://warpcast.com/~/compose?text=${encodeURIComponent(message)}`,
+            "_blank"
+          );
+          break;
+        case "copy":
+          await navigator.clipboard.writeText(message);
+          setShareStatus("Copied to clipboard!");
+          setTimeout(() => setShareStatus(""), 2000);
+          break;
+      }
+    };
+  
+    const generateShareMessage = (platform: "X" | "warpcast" | "copy") => {
+      const result = isWinner ? "won" : "lost";
+      const url =
+        platform === "warpcast"
+          ? "flip-it-clanker.vercel.app/"
+          : window.location.href;
+      const basescanUrl = joinGameHash
+        ? `https://basescan.org/tx/${joinGameHash}`
+        : "";
+      return `I just ${result} ${formatEther(currentNotification.payout)} ${token.symbol} flipping ${currentNotification.playerFace ? "Heads" : "Tails"} (Result: ${currentNotification.outcome ? "Heads" : "Tails"})! ${
+        basescanUrl ? `(Tx: ${basescanUrl}) ` : ""
+      }Try your luck at ${url}`;
+    };
+  
     return (
-      <div className="text-black fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]">
-        <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-          <div className="text-center mb-4">
-            <h2 className="text-2xl font-bold">
-              {isWinner ? "🎉 You Won!" : "😢 You Lost"}
-            </h2>
-            <p className="text-sm text-gray-500">
-              Bet ID: {Number(currentNotification.betId)}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="bg-gray-100 p-3 rounded">
-              <p className="text-xs text-gray-500">Your Choice</p>
-              <p className="font-medium text-lg">
-                {currentNotification.playerFace ? "Heads" : "Tails"}
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+          {/* Result Card */}
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg border border-purple-200 shadow-md mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-purple-800">
+                {isWinner ? "🎉 Victory!" : "🎲 Try Again!"}
+              </h2>
+              <p className="text-sm text-gray-500">
+                Bet ID: {Number(currentNotification.betId)}
               </p>
+              <span
+                className={`px-2 py-1 rounded-full text-sm font-medium ${
+                  isWinner
+                    ? "bg-green-200 text-green-800"
+                    : "bg-red-200 text-red-800"
+                }`}
+              >
+                {isWinner ? "Won" : "Lost"}
+              </span>
             </div>
-            <div className="bg-gray-100 p-3 rounded">
-              <p className="text-xs text-gray-500">Actual Result</p>
-              <p className="font-medium text-lg">
-                {currentNotification.outcome ? "Heads" : "Tails"}
+  
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div className="text-center">
+                <p className="text-sm text-purple-600">Player1 Choice</p>
+                <p className="text-lg font-semibold text-purple-900">
+                  {currentNotification.playerFace ? "Heads" : "Tails"}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-purple-600">Outcome</p>
+                <p className="text-lg font-semibold text-purple-900">
+                  {currentNotification.outcome ? "Heads" : "Tails"}
+                </p>
+              </div>
+            </div>
+  
+            <div className="bg-purple-200/50 p-3 rounded-md">
+              <p className="text-sm text-purple-700">
+                {formatEther(currentNotification.payout)} {token.symbol}
               </p>
+              {joinGameHash && (
+                <p className="text-xs text-purple-600 mt-1 truncate">
+                  Tx:{" "}
+                  <a
+                    href={`https://basescan.org/tx/${joinGameHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-purple-800"
+                    title={joinGameHash}
+                  >
+                    {joinGameHash.slice(0, 6)}...
+                    {joinGameHash.slice(-4)}
+                  </a>
+                </p>
+              )}
             </div>
           </div>
-
-          <div className="bg-blue-50 p-4 rounded mb-4">
-            <p className="text-center font-semibold">
-              {formatEther(currentNotification.payout)} {token.symbol}
+  
+          {/* Share Section */}
+          <div className="border-t border-b border-gray-200 py-4 my-4">
+            <p className="text-center text-gray-700 mb-3 font-medium">
+              Share your result
             </p>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => handleShare("X")}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Share on X"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 512 512"
+                  fill="#none"
+                >
+                  <path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm297.1 84L257.3 234.6 379.4 396H283.8L209 298.1 123.3 396H75.8l111-126.9L69.7 116h98l67.7 89.5L313.6 116h47.5zM323.3 367.6L153.4 142.9H125.1L296.9 367.6h26.3z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleShare("warpcast")}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Share on Warpcast"
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 1000 1000"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="1000" height="1000" fill="#855DCD" />
+                  <path
+                    d="M257.778 155.556H742.222V844.444H671.111V528.889H670.414C662.554 441.677 589.258 373.333 500 373.333C410.742 373.333 337.446 441.677 329.586 528.889H328.889V844.444H257.778V155.556Z"
+                    fill="white"
+                  />
+                  <path
+                    d="M128.889 253.333L157.778 351.111H182.222V746.667C169.949 746.667 160 756.616 160 768.889V795.556H155.556C143.283 795.556 133.333 805.505 133.333 817.778V844.444H382.222V817.778C382.222 805.505 372.273 795.556 360 795.556H355.556V768.889C355.556 756.616 345.606 746.667 333.333 746.667H306.667V253.333H128.889Z"
+                    fill="white"
+                  />
+                  <path
+                    d="M675.555 746.667C663.282 746.667 653.333 756.616 653.333 768.889V795.556H648.889C636.616 795.556 626.667 805.505 626.667 817.778V844.444H875.555V817.778C875.555 805.505 865.606 795.556 853.333 795.556H848.889V768.889C848.889 756.616 838.94 746.667 826.667 746.667V351.111H851.111L880 253.333H702.222V746.667H675.555Z"
+                    fill="white"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleShare("copy")}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Copy to clipboard"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <rect
+                    x="9"
+                    y="9"
+                    width="13"
+                    height="13"
+                    rx="2"
+                    ry="2"
+                  ></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+            {shareStatus && (
+              <p className="text-center mt-2 text-green-600 text-sm animate-fade-in">
+                {shareStatus}
+              </p>
+            )}
           </div>
-
-          <div className="flex justify-center space-x-3">
-            <button
-              onClick={() => {
-                const message = `I just ${isWinner ? "won" : "lost"} ${formatEther(currentNotification.payout)} ${token.symbol} on CoinFlip!`;
-                navigator.clipboard.writeText(message);
-                setShareStatus("Copied to clipboard!");
-                setTimeout(() => setShareStatus(""), 2000);
-              }}
-              className="px-4 py-2 bg-gray-200 rounded text-sm"
-            >
-              Share Result
-            </button>
-            <button
-              onClick={() => {
-                setCurrentNotification(null);
-                setShareStatus("");
-              }}
-              className="px-4 py-2 bg-blue-500 text-white rounded text-sm"
-            >
-              Close
-            </button>
-          </div>
-          {shareStatus && (
-            <p className="text-center mt-2 text-green-600 text-sm">
-              {shareStatus}
-            </p>
-          )}
+  
+          <button
+            onClick={() => {
+              setCurrentNotification(null);
+              setShareStatus("");
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded text-sm"
+          >
+            Close
+          </button>
         </div>
       </div>
     );
