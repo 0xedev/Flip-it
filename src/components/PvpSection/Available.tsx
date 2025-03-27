@@ -38,7 +38,8 @@ const FlipCoinFrontend = () => {
     token: Address;
   }
 
-  const [currentNotification, setCurrentNotification] = useState<NotificationEvent | null>(null);
+  const [currentNotification, setCurrentNotification] =
+    useState<NotificationEvent | null>(null);
 
   // Contract interactions
   const { data: allBetsData, refetch: refetchAllBets } = useReadContract({
@@ -47,19 +48,18 @@ const FlipCoinFrontend = () => {
     functionName: "allBets",
   });
 
-  const { writeContract: writeApprove, error: approveError } = useWriteContract();
-  const { isLoading: isApproveConfirming, isSuccess: isApproveConfirmed } =
-    useWaitForTransactionReceipt({ hash: approvalHash as `0x${string}` });
+  const { writeContract: writeApprove, error: approveError } =
+    useWriteContract();
+  const { isSuccess: isApproveConfirmed } = useWaitForTransactionReceipt({
+    hash: approvalHash as `0x${string}`,
+  });
 
   const {
     data: joinGameHash,
     writeContract: joinGame,
     isPending: isJoining,
-    error: joinError,
-    reset: resetJoinGame,
   } = useWriteContract();
-  const { isLoading: isJoinConfirming, isSuccess: isJoinConfirmed } =
-    useWaitForTransactionReceipt({ hash: joinGameHash });
+  const {} = useWaitForTransactionReceipt({ hash: joinGameHash });
 
   const {
     writeContract: writeCancelBet,
@@ -72,7 +72,7 @@ const FlipCoinFrontend = () => {
     address: ADDRESS as Address,
     abi: ABI,
     eventName: "AllBets",
-    onLogs(logs) {
+    onLogs() {
       refetchAllBets();
     },
   });
@@ -84,7 +84,7 @@ const FlipCoinFrontend = () => {
     onLogs: (logs) => {
       logs.forEach((log) => {
         try {
-          const args = log.args as unknown as NotificationEvent;
+          const args = (log as unknown as { args: NotificationEvent }).args;
           console.log("Notification event received:", args);
 
           // Only process fulfilled bets
@@ -92,7 +92,12 @@ const FlipCoinFrontend = () => {
 
           // Convert betId to number
           const eventBetId = Number(args.betId);
-          console.log("Processing bet:", eventBetId, "Current selectedBetId:", selectedBetId);
+          console.log(
+            "Processing bet:",
+            eventBetId,
+            "Current selectedBetId:",
+            selectedBetId
+          );
 
           // Check if this is the bet we're waiting for
           if (eventBetId === selectedBetId) {
@@ -114,7 +119,7 @@ const FlipCoinFrontend = () => {
       currentNotification,
       joiningBetId,
       isFlipping,
-      joinGameHash
+      joinGameHash,
     });
   }, [currentNotification, joiningBetId, isFlipping, joinGameHash]);
 
@@ -269,15 +274,19 @@ const FlipCoinFrontend = () => {
 
   const NotificationPopup = () => {
     if (!currentNotification) return null;
-  
-    const isWinner = currentNotification.winner.toLowerCase() === userAddress?.toLowerCase();
+
+    const isWinner =
+      currentNotification.winner.toLowerCase() === userAddress?.toLowerCase();
     const token = SUPPORTED_TOKENS.find(
-      t => t.address.toLowerCase() === currentNotification.token.toLowerCase()
-    ) || { 
-      symbol: currentNotification.token.slice(0, 6) + "..." + currentNotification.token.slice(-4), 
-      decimals: 18 
+      (t) => t.address.toLowerCase() === currentNotification.token.toLowerCase()
+    ) || {
+      symbol:
+        currentNotification.token.slice(0, 6) +
+        "..." +
+        currentNotification.token.slice(-4),
+      decimals: 18,
     };
-  
+
     const handleShare = async (platform: "X" | "warpcast" | "copy") => {
       const message = generateShareMessage(platform);
       switch (platform) {
@@ -289,7 +298,9 @@ const FlipCoinFrontend = () => {
           break;
         case "warpcast":
           window.open(
-            `https://warpcast.com/~/compose?text=${encodeURIComponent(message)}`,
+            `https://warpcast.com/~/compose?text=${encodeURIComponent(
+              message
+            )}`,
             "_blank"
           );
           break;
@@ -300,7 +311,7 @@ const FlipCoinFrontend = () => {
           break;
       }
     };
-  
+
     const generateShareMessage = (platform: "X" | "warpcast" | "copy") => {
       const result = isWinner ? "won" : "lost";
       const url =
@@ -310,11 +321,15 @@ const FlipCoinFrontend = () => {
       const basescanUrl = joinGameHash
         ? `https://basescan.org/tx/${joinGameHash}`
         : "";
-      return `I just ${result} ${formatEther(currentNotification.payout)} ${token.symbol} flipping ${currentNotification.playerFace ? "Heads" : "Tails"} (Result: ${currentNotification.outcome ? "Heads" : "Tails"})! ${
+      return `I just ${result} ${formatEther(currentNotification.payout)} ${
+        token.symbol
+      } flipping ${
+        currentNotification.playerFace ? "Heads" : "Tails"
+      } (Result: ${currentNotification.outcome ? "Heads" : "Tails"})! ${
         basescanUrl ? `(Tx: ${basescanUrl}) ` : ""
       }Try your luck at ${url}`;
     };
-  
+
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
@@ -337,7 +352,7 @@ const FlipCoinFrontend = () => {
                 {isWinner ? "Won" : "Lost"}
               </span>
             </div>
-  
+
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="text-center">
                 <p className="text-sm text-purple-600">Player1 Choice</p>
@@ -352,7 +367,7 @@ const FlipCoinFrontend = () => {
                 </p>
               </div>
             </div>
-  
+
             <div className="bg-purple-200/50 p-3 rounded-md">
               <p className="text-sm text-purple-700">
                 {formatEther(currentNotification.payout)} {token.symbol}
@@ -374,7 +389,7 @@ const FlipCoinFrontend = () => {
               )}
             </div>
           </div>
-  
+
           {/* Share Section */}
           <div className="border-t border-b border-gray-200 py-4 my-4">
             <p className="text-center text-gray-700 mb-3 font-medium">
@@ -437,14 +452,7 @@ const FlipCoinFrontend = () => {
                   stroke="currentColor"
                   strokeWidth="2"
                 >
-                  <rect
-                    x="9"
-                    y="9"
-                    width="13"
-                    height="13"
-                    rx="2"
-                    ry="2"
-                  ></rect>
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
               </button>
@@ -455,7 +463,7 @@ const FlipCoinFrontend = () => {
               </p>
             )}
           </div>
-  
+
           <button
             onClick={() => {
               setCurrentNotification(null);

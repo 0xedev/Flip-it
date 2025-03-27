@@ -539,8 +539,8 @@ const CreateGameForm: React.FC = () => {
                 ? "bg-gray-400"
                 : "bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5"
             }`}
-            aria-label="Quick Bet with 0.1 tokens"
-            title="Instantly bet 0.1 tokens"
+            aria-label="Quick Bet with 1000 tokens"
+            title="Instantly bet 1000 tokens"
           >
             {isPending && currentStep === "approve" ? (
               <span className="flex items-center justify-center">

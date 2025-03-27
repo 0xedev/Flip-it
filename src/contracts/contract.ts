@@ -658,10 +658,10 @@ export const ABI = [
 ];
 
 // src/contracts/FlipGameContract.ts
-export const ADDRESS = "0x68F355B8be22371c8Bed37D3ca19934007bB6aC8";
+export const ADDRESS = "0x1bdD1470f66e7774273eA5e972e770aCD19d68A5";
 
 // Supported tokens -
-// 0x07F41412697D14981e770b6E335051b1231A2bA8
+// 0x07F41412697D14981e770b6E335051b1231A2bA8 0x1bdD1470f66e7774273eA5e972e770aCD19d68A5
 // replace with actual token addresses
 export const SUPPORTED_TOKENS = {
   STABLEAI: "0x07F41412697D14981e770b6E335051b1231A2bA8",
