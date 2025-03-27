@@ -11,7 +11,7 @@
     "homeUrl": "https://flip-it-clanker.vercel.app",
     "imageUrl": "https://flip-it-clanker.vercel.app/image.png",
     "buttonTitle": "Flip",
-    "splashImageUrl": "https://flip-it-clanker.vercel.app/splash.png",
+    "splashImageUrl": "https://flip-it-clanker.vercel.app/icon.png",
     "splashBackgroundColor": "#eeccff",
     "webhookUrl": "https://flip-it-clanker.vercel.app/api/webhook"
   }
