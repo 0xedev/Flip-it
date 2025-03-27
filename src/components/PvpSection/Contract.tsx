@@ -814,7 +814,7 @@ export const ADDRESS = "0xd71F2aafd0Be2cb18892Ad2A9352427804956Ca7"; // Replace 
 
 // Supported tokens -
 export const SUPPORTED_TOKENS = [
-  { symbol: "STABLEAI", address: "0xa70ACcF074E03d3b5543DE069024dFD418B3172d" },
+  { symbol: "STABLEAI", address: "0x07F41412697D14981e770b6E335051b1231A2bA8" },
   { symbol: "DIG", address: "0x208561379990f106E6cD59dDc14dFB1F290016aF" },
   { symbol: "WEB9", address: "0x09CA293757C6ce06df17B96fbcD9c5f767f4b2E1" },
   { symbol: "BNKR", address: "0x22aF33FE49fD1Fa80c7149773dDe5890D3c76F3b" },
