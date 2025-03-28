@@ -324,30 +324,47 @@ const CreateGameForm: React.FC = () => {
     setAmount(newAmount);
   };
 
-  const handleShare = async (platform: "X" | "warpcast" | "copy") => {
-    const message = generateShareMessage(platform);
-    const url = window.location.href;
-    
+  type SharePlatform = "X" | "warpcast" | "copy";
+
+const handleShare = async (platform: SharePlatform) => {
+  const message = generateShareMessage(platform);
+  const baseUrl = window.location.href;
+  const pvpUrl = `${baseUrl}/pvp`; // Append /pvp to the base URL
+  
+  try {
     switch (platform) {
       case "X":
         window.open(
-          `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(url)}`,
-          '_blank'
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(baseUrl)}`,
+          '_blank',
+          'noopener,noreferrer'
         );
         break;
       case "warpcast":
         window.open(
-          `https://warpcast.com/~/compose?text=${encodeURIComponent(message)}&embeds[]=${encodeURIComponent(url)}`,
-          '_blank'
+          `https://warpcast.com/~/compose?text=${encodeURIComponent(message)}&embeds[]=${encodeURIComponent(pvpUrl)}`,
+          '_blank',
+          'noopener,noreferrer'
         );
         break;
       case "copy":
-        await navigator.clipboard.writeText(`${message} - ${url}`);
-        setShareStatus("Copied to clipboard!");
-        setTimeout(() => setShareStatus(""), 2000);
+        try {
+          // Copy the regular URL (without /pvp) to clipboard
+          await navigator.clipboard.writeText(`${message} - ${baseUrl}`);
+          setShareStatus("Copied to clipboard!");
+          const timer = setTimeout(() => setShareStatus(""), 2000);
+          return () => clearTimeout(timer);
+        } catch (err) {
+          console.error('Failed to copy:', err);
+          setShareStatus("Failed to copy");
+          setTimeout(() => setShareStatus(""), 2000);
+        }
         break;
     }
-  };
+  } catch (error) {
+    console.error('Sharing failed:', error);
+  }
+};
 
   const generateShareMessage = (platform: "X" | "warpcast" | "copy"): string => {
     const baseMessage = `Join my coin flip game! ID: ${gameId} - I bet ${amount} ${tokenSymbol} on ${face ? "Heads" : "Tails"}`;
@@ -367,10 +384,10 @@ const CreateGameForm: React.FC = () => {
     : "";
 
   return (
-    <div className="bg-gradient-to-br from-gray-100 to-gray-200 py-4 px-4 sm:px-6">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6 relative overflow-hidden">
-        {/* Background pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2220%22 height=%2220%22 viewBox=%220 0 20 20%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M10 10h.01%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E')] opacity-10 pointer-events-none"></div>
+    <div className="bg-gradient-to-br from-gray-100 to-gray-200 py-2 px-2 sm:py-4 sm:px-6">
+    <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-3 sm:p-6 relative overflow-hidden max-h-[80vh] sm:max-h-none overflow-y-auto">
+      {/* Background pattern */}
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2220%22 height=%2220%22 viewBox=%220 0 20 20%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M10 10h.01%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E')] opacity-10 pointer-events-none"></div>
 
         {/* Progress Stepper */}
         <div className="flex justify-between mb-4 sm:mb-6 relative z-10">
