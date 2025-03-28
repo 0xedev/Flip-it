@@ -1,20 +1,61 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SUPPORTED_TOKENS, ADDRESS, ABI } from "./Contract";
-import { useWriteContract, useAccount, useReadContract } from "wagmi";
+import { useWriteContract, useAccount, useReadContract, usePublicClient } from "wagmi";
 import { parseUnits, Address, formatUnits } from "viem";
+import { decodeEventLog } from 'viem';
 
 const TOKEN_ICONS: { [key: string]: string } = {
   STABLEAI: "https://flip-it-clanker.vercel.app/icon.svg",
-  // Add more token icons as needed
 };
 
 export function useCreateGame() {
-  const [gameId] = useState<number | null>(null);
+  const [gameId, setGameId] = useState<number | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const publicClient = usePublicClient();
+
+  if (!publicClient) {
+    throw new Error("useCreateGame must be used within a WagmiProvider");
+  }
 
   const { writeContractAsync } = useWriteContract();
+
+    // Helper to decode event logs
+    const decodeGameCreationEvent = ({ data, topics }: { data: `0x${string}`, topics: [`0x${string}`, ...`0x${string}`[]] }) => {
+      const eventAbi = ABI.find((item: any) => item.type === 'event' && item.name === 'AllBets');
+      if (!eventAbi) throw new Error('AllBets event ABI not found');
+      
+      return decodeEventLog({
+        abi: [eventAbi],
+        data,
+        topics
+      });
+    };
+
+    const extractGameIdFromReceipt = (receipt: any) => {
+      try {
+        const eventLog = receipt.logs.find((log: any) => 
+          log.address.toLowerCase() === ADDRESS.toLowerCase());
+        
+        if (!eventLog) return null;
+  
+        const decoded = decodeGameCreationEvent({
+          data: eventLog.data as `0x${string}`,
+          topics: eventLog.topics as [`0x${string}`, ...`0x${string}`[]]
+        });
+             // Type guard to check if args exists and has betId property
+      if (!decoded.args || typeof decoded.args !== 'object' || !('betId' in decoded.args)) {
+        throw new Error('Invalid event data structure');
+      }
+
+      return Number((decoded.args as { betId: bigint }).betId);
+    } catch (error) {
+      console.error("Error decoding event log:", error);
+      return null;
+    }
+  };
+  
 
   const approveToken = async (
     tokenAddress: Address,
@@ -62,6 +103,8 @@ export function useCreateGame() {
     }
   };
 
+  
+
   const createGame = async ({
     face,
     tokenSymbol,
@@ -92,16 +135,25 @@ export function useCreateGame() {
 
       await new Promise((resolve) => setTimeout(resolve, 5000));
 
-      const tx = await writeContractAsync({
+      const txHash = await writeContractAsync({
         address: ADDRESS as Address,
         abi: ABI,
         functionName: "createGame",
         args: [face, token.address, parsedAmount, BigInt(betTimeout)],
       });
 
+      const receipt = await publicClient.waitForTransactionReceipt({ 
+        hash: txHash,
+        confirmations: 1
+      });
+
+      const newGameId = extractGameIdFromReceipt(receipt);
+      if (!newGameId) throw new Error("Could not determine game ID");
+
+      setGameId(newGameId);
       setIsPending(false);
       setIsSuccess(true);
-      return tx;
+      return { txHash, gameId: newGameId };
     } catch (err) {
       setError(
         err instanceof Error ? err : new Error("Unknown error occurred")
@@ -134,11 +186,13 @@ const CreateGameForm: React.FC = () => {
   } | null>(null);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [showTour, setShowTour] = useState<boolean>(false);
-
+  const [showSuccessPopup, setShowSuccessPopup] = useState<boolean>(false);
+  const [gameTxHash, setGameTxHash] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState("");
   const sliderRef = useRef<HTMLInputElement>(null);
   const coinRef = useRef<HTMLDivElement>(null);
 
-  const { createGame, isPending } = useCreateGame();
+  const { createGame, gameId, isPending } = useCreateGame();
 
   const selectedToken = SUPPORTED_TOKENS.find((t) => t.symbol === tokenSymbol);
   const tokenAddress = selectedToken?.address as Address;
@@ -229,15 +283,19 @@ const CreateGameForm: React.FC = () => {
     if (!validateAmount(betAmount)) return;
 
     try {
-      await createGame({
+      const { txHash } = await createGame({
         face,
         tokenSymbol,
         amount: betAmount,
         betTimeout,
         tokenBalance,
       });
+      
+      setGameTxHash(txHash);
       setCurrentStep("create");
       setToast({ message: "Game created successfully!", type: "success" });
+      setShowSuccessPopup(true);
+      
       if (coinRef.current) {
         coinRef.current.classList.add("animate-flip");
         setTimeout(
@@ -266,22 +324,60 @@ const CreateGameForm: React.FC = () => {
     setAmount(newAmount);
   };
 
+  const handleShare = async (platform: "X" | "warpcast" | "copy") => {
+    const message = generateShareMessage(platform);
+    const url = window.location.href;
+    
+    switch (platform) {
+      case "X":
+        window.open(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(message)}&url=${encodeURIComponent(url)}`,
+          '_blank'
+        );
+        break;
+      case "warpcast":
+        window.open(
+          `https://warpcast.com/~/compose?text=${encodeURIComponent(message)}&embeds[]=${encodeURIComponent(url)}`,
+          '_blank'
+        );
+        break;
+      case "copy":
+        await navigator.clipboard.writeText(`${message} - ${url}`);
+        setShareStatus("Copied to clipboard!");
+        setTimeout(() => setShareStatus(""), 2000);
+        break;
+    }
+  };
+
+  const generateShareMessage = (platform: "X" | "warpcast" | "copy"): string => {
+    const baseMessage = `Join my coin flip game! ID: ${gameId} - I bet ${amount} ${tokenSymbol} on ${face ? "Heads" : "Tails"}`;
+    
+    switch (platform) {
+      case "X":
+        return `${baseMessage} 🎲 #CoinFlip`;
+      case "warpcast":
+        return `${baseMessage} 🚀`;
+      case "copy":
+        return baseMessage;
+    }
+  };
+
   const truncatedAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
     : "";
 
   return (
-    <div className="bg-gradient-to-br from-gray-100 to-gray-200 py-2 px-2 sm:py-4 sm:px-6">
-      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-3 sm:p-6 relative overflow-hidden max-h-[80vh] sm:max-h-none overflow-y-auto">
+    <div className="bg-gradient-to-br from-gray-100 to-gray-200 py-4 px-4 sm:px-6">
+      <div className="max-w-md mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6 relative overflow-hidden">
         {/* Background pattern */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2220%22 height=%2220%22 viewBox=%220 0 20 20%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M10 10h.01%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E')] opacity-10 pointer-events-none"></div>
 
         {/* Progress Stepper */}
-        <div className="flex justify-between mb-3 sm:mb-6 relative z-10">
+        <div className="flex justify-between mb-4 sm:mb-6 relative z-10">
           {["Prepare", "Approve", "Create"].map((step, idx) => (
             <div key={step} className="flex flex-col items-center">
               <div
-                className={`w-5 h-5 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
+                className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   currentStep === step.toLowerCase()
                     ? "bg-blue-600 text-white"
                     : idx <
@@ -298,8 +394,8 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-3 sm:mb-6 gap-2">
-          <h2 className="text-base sm:text-xl font-bold text-gray-800">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-2">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800">
             Create Game
           </h2>
           <div className="flex items-center gap-2">
@@ -308,7 +404,7 @@ const CreateGameForm: React.FC = () => {
             </span>
             <button
               onClick={() => setShowTour(true)}
-              className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 rounded"
+              className="text-blue-600 hover:text-blue-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 rounded"
               aria-label="Show first time tour"
             >
               First time?
@@ -317,15 +413,15 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Balance Display */}
-        <div className="text-center mb-3 sm:mb-6 p-2 sm:p-4 bg-gray-50 rounded-lg shadow-inner">
+        <div className="text-center mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg shadow-inner">
           {isLoadingBalance || isLoading ? (
             <span className="text-gray-500 animate-pulse">Loading...</span>
           ) : (
             <>
-              <span className="text-lg sm:text-2xl font-semibold text-gray-800">
+              <span className="text-xl sm:text-2xl font-semibold text-gray-800">
                 {parseFloat(formattedBalance).toFixed(2)}
               </span>
-              <span className="ml-2 text-gray-600 text-xs sm:text-base">
+              <span className="ml-2 text-gray-600 text-sm sm:text-base">
                 {tokenSymbol}
               </span>
             </>
@@ -333,8 +429,8 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Heads/Tails */}
-        <div className="mb-3 sm:mb-6">
-          <label className="flex items-center justify-between text-xs sm:text-sm font-medium text-gray-800 mb-2">
+        <div className="mb-4 sm:mb-6">
+          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
             Choose Side
             <span
               className="text-xs text-gray-500 cursor-help"
@@ -345,7 +441,7 @@ const CreateGameForm: React.FC = () => {
           </label>
           <div ref={coinRef} className="grid grid-cols-2 gap-2 sm:gap-4">
             <button
-              className={`p-2 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[60px] sm:min-h-[100px] ${
+              className={`p-3 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[80px] sm:min-h-[100px] ${
                 face
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-gray-100 hover:bg-gray-200"
@@ -354,13 +450,13 @@ const CreateGameForm: React.FC = () => {
               aria-label="Bet on Heads"
               aria-pressed={face}
             >
-              <div className="w-8 h-8 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-base sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-800 mb-2">
                 H
               </div>
-              <span className="text-xs sm:text-sm">Heads</span>
+              <span className="text-sm">Heads</span>
             </button>
             <button
-              className={`p-2 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[60px] sm:min-h-[100px] ${
+              className={`p-3 sm:p-4 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[80px] sm:min-h-[100px] ${
                 !face
                   ? "bg-blue-600 text-white shadow-md"
                   : "bg-gray-100 hover:bg-gray-200"
@@ -369,17 +465,17 @@ const CreateGameForm: React.FC = () => {
               aria-label="Bet on Tails"
               aria-pressed={!face}
             >
-              <div className="w-8 h-8 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-base sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto rounded-full bg-yellow-400 flex items-center justify-center text-lg sm:text-xl font-bold text-gray-800 mb-2">
                 T
               </div>
-              <span className="text-xs sm:text-sm">Tails</span>
+              <span className="text-sm">Tails</span>
             </button>
           </div>
         </div>
 
         {/* Token Selection */}
-        <div className="text-black mb-3 sm:mb-6">
-          <label className="flex items-center justify-between text-xs sm:text-sm font-medium text-gray-800 mb-2">
+        <div className="text-black mb-4 sm:mb-6">
+          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
             Token
             <span
               className="text-xs text-gray-500 cursor-help"
@@ -392,7 +488,7 @@ const CreateGameForm: React.FC = () => {
             {SUPPORTED_TOKENS.map((token) => (
               <button
                 key={token.symbol}
-                className={`p-2 sm:p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[50px] sm:min-h-[80px] ${
+                className={`p-2 sm:p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 min-h-[60px] sm:min-h-[80px] ${
                   tokenSymbol === token.symbol
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:bg-gray-50"
@@ -407,7 +503,7 @@ const CreateGameForm: React.FC = () => {
                     "https://flip-it-clanker.vercel.app/icon.svg"
                   }
                   alt={`${token.symbol} icon`}
-                  className="w-4 h-4 sm:w-6 sm:h-6 mx-auto mb-1"
+                  className="w-5 h-5 sm:w-6 sm:h-6 mx-auto mb-1"
                 />
                 <span className="text-xs sm:text-sm">{token.symbol}</span>
               </button>
@@ -416,8 +512,8 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Bet Amount */}
-        <div className="mb-3 text-black sm:mb-6">
-          <label className="flex items-center justify-between text-xs sm:text-sm font-medium text-gray-800 mb-2">
+        <div className="mb-4 text-black sm:mb-6">
+          <label className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
             Bet Amount
             <span
               className="text-xs text-gray-500 cursor-help"
@@ -430,7 +526,7 @@ const CreateGameForm: React.FC = () => {
             {betPresets.map((preset) => (
               <button
                 key={preset.label}
-                className={`p-1 sm:p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                className={`p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
                   parseFloat(amount) === (maxBet * preset.percent) / 100
                     ? "bg-blue-600 text-white"
                     : "bg-gray-100 hover:bg-gray-200"
@@ -448,14 +544,14 @@ const CreateGameForm: React.FC = () => {
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="flex-1 p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs sm:text-base"
+              className="flex-1 p-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base"
               step="0.01"
               min="0"
               max={maxBet}
               disabled={isPending}
               aria-label="Bet amount"
             />
-            <span className="p-2 bg-gray-100 rounded-r-lg text-gray-700 text-xs sm:text-base">
+            <span className="p-2 bg-gray-100 rounded-r-lg text-gray-700 text-sm sm:text-base">
               {tokenSymbol}
             </span>
           </div>
@@ -482,9 +578,9 @@ const CreateGameForm: React.FC = () => {
         </div>
 
         {/* Timeout */}
-        <div className="mb-3 text-black sm:mb-6">
+        <div className="mb-4 text-black sm:mb-6">
           <button
-            className="flex justify-between w-full text-xs sm:text-sm font-medium text-gray-800 mb-2 focus:outline-none"
+            className="flex justify-between w-full text-sm font-medium text-gray-800 mb-2 focus:outline-none"
             onClick={() => setShowAdvanced(!showAdvanced)}
             aria-expanded={showAdvanced}
           >
@@ -502,7 +598,7 @@ const CreateGameForm: React.FC = () => {
                 {timeoutOptions.map((option) => (
                   <button
                     key={option.value}
-                    className={`p-1 sm:p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
+                    className={`p-2 rounded-lg text-xs transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 ${
                       betTimeout === option.value
                         ? "bg-blue-600 text-white"
                         : "bg-gray-100 hover:bg-gray-200"
@@ -517,7 +613,7 @@ const CreateGameForm: React.FC = () => {
                 type="number"
                 value={betTimeout}
                 onChange={(e) => setBetTimeout(parseInt(e.target.value))}
-                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs sm:text-base"
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base"
                 min="1"
                 disabled={isPending}
                 aria-label="Timeout in seconds"
@@ -534,20 +630,17 @@ const CreateGameForm: React.FC = () => {
           <button
             onClick={() => handleCreateGame(true)}
             disabled={isPending || isLoadingBalance}
-            className={`p-2 sm:p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-green-300 text-xs sm:text-base ${
+            className={`p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-green-300 text-sm sm:text-base ${
               isPending
                 ? "bg-gray-400"
                 : "bg-green-600 hover:bg-green-700 hover:shadow-lg transform hover:-translate-y-0.5"
             }`}
-            aria-label="Quick Bet with 1000 tokens"
-            title="Instantly bet 1000 tokens"
+            aria-label="Quick Bet with 0.1 tokens"
+            title="Instantly bet 0.1 tokens"
           >
             {isPending && currentStep === "approve" ? (
               <span className="flex items-center justify-center">
-                <svg
-                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -571,7 +664,7 @@ const CreateGameForm: React.FC = () => {
           <button
             onClick={() => handleCreateGame()}
             disabled={isPending || isLoadingBalance}
-            className={`p-2 sm:p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 text-xs sm:text-base ${
+            className={`p-3 rounded-lg text-white transition-all focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base ${
               isPending
                 ? "bg-gray-400"
                 : "bg-blue-600 hover:bg-blue-700 hover:shadow-lg transform hover:-translate-y-0.5"
@@ -580,10 +673,7 @@ const CreateGameForm: React.FC = () => {
           >
             {isPending ? (
               <span className="flex items-center justify-center">
-                <svg
-                  className="animate-spin h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2"
-                  viewBox="0 0 24 24"
-                >
+                <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -606,10 +696,156 @@ const CreateGameForm: React.FC = () => {
           </button>
         </div>
 
+        {/* Success Popup */}
+        {showSuccessPopup && gameId && (
+          <div className="fixed text-black inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg max-w-md w-11/12 success-popup">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-8 w-8 text-green-600"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold mb-2">Game Created Successfully!</h3>
+                <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                  <p className="font-mono text-sm">Game ID: #{gameId}</p>
+                  <p className="text-sm mt-1">
+                    {amount} {tokenSymbol} on {face ? "Heads" : "Tails"}
+                  </p>
+                </div>
+                
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 mb-2">Share this game:</p>
+                  <div className="flex justify-center space-x-4">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `Join my coin flip game! ID: ${gameId} - ${window.location.href}`
+                        );
+                        setToast({ message: "Copied to clipboard!", type: "success" });
+                      }}
+                      className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"
+                      title="Copy link"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                        />
+                      </svg>
+                    </button>
+                    <div className="flex justify-center space-x-4">
+              <button
+                onClick={() => handleShare("X")}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Share on X"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 512 512"
+                  fill="#none"
+                >
+                  <path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64zm297.1 84L257.3 234.6 379.4 396H283.8L209 298.1 123.3 396H75.8l111-126.9L69.7 116h98l67.7 89.5L313.6 116h47.5zM323.3 367.6L153.4 142.9H125.1L296.9 367.6h26.3z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleShare("warpcast")}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Share on Warpcast"
+              >
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 1000 1000"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect width="1000" height="1000" fill="#855DCD" />
+                  <path
+                    d="M257.778 155.556H742.222V844.444H671.111V528.889H670.414C662.554 441.677 589.258 373.333 500 373.333C410.742 373.333 337.446 441.677 329.586 528.889H328.889V844.444H257.778V155.556Z"
+                    fill="white"
+                  />
+                  <path
+                    d="M128.889 253.333L157.778 351.111H182.222V746.667C169.949 746.667 160 756.616 160 768.889V795.556H155.556C143.283 795.556 133.333 805.505 133.333 817.778V844.444H382.222V817.778C382.222 805.505 372.273 795.556 360 795.556H355.556V768.889C355.556 756.616 345.606 746.667 333.333 746.667H306.667V253.333H128.889Z"
+                    fill="white"
+                  />
+                  <path
+                    d="M675.555 746.667C663.282 746.667 653.333 756.616 653.333 768.889V795.556H648.889C636.616 795.556 626.667 805.505 626.667 817.778V844.444H875.555V817.778C875.555 805.505 865.606 795.556 853.333 795.556H848.889V768.889C848.889 756.616 838.94 746.667 826.667 746.667V351.111H851.111L880 253.333H702.222V746.667H675.555Z"
+                    fill="white"
+                  />
+                </svg>
+              </button>
+              <button
+                onClick={() => handleShare("copy")}
+                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                aria-label="Copy to clipboard"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setShowSuccessPopup(false)}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `Join my coin flip game! ID: ${gameId} - ${window.location.href}`
+                      );
+                      setToast({ message: "Copied to clipboard!", type: "success" });
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Copy Link
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Toast */}
         {toast && (
           <div
-            className={`fixed bottom-4 left-4 right-4 sm:max-w-sm sm:mx-auto p-3 sm:p-4 rounded-lg shadow-lg text-white animate-fade-in text-xs sm:text-sm ${
+            className={`fixed bottom-4 left-4 right-4 sm:max-w-sm sm:mx-auto p-4 rounded-lg shadow-lg text-white animate-fade-in text-sm ${
               toast.type === "success"
                 ? "bg-green-600"
                 : toast.type === "error"
@@ -631,11 +867,9 @@ const CreateGameForm: React.FC = () => {
         {/* Guided Tour Modal */}
         {showTour && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white p-3 sm:p-6 rounded-lg max-w-md w-11/12">
-              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">
-                Welcome to Coin Flip!
-              </h3>
-              <p className="text-gray-700 mb-3 sm:mb-4 text-xs sm:text-base">
+            <div className="bg-white p-4 sm:p-6 rounded-lg max-w-md w-11/12">
+              <h3 className="text-lg font-bold mb-4">Welcome to Coin Flip!</h3>
+              <p className="text-gray-700 mb-4 text-sm sm:text-base">
                 1. Choose Heads or Tails
                 <br />
                 2. Select your token and amount
@@ -646,7 +880,7 @@ const CreateGameForm: React.FC = () => {
               </p>
               <button
                 onClick={() => setShowTour(false)}
-                className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-base"
+                className="w-full p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm sm:text-base"
               >
                 Got it!
               </button>
@@ -679,6 +913,19 @@ const CreateGameForm: React.FC = () => {
             opacity: 0;
           }
           to {
+            opacity: 1;
+          }
+        }
+        .success-popup {
+          animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn {
+          0% {
+            transform: scale(0.8);
+            opacity: 0;
+          }
+          100% {
+            transform: scale(1);
             opacity: 1;
           }
         }
